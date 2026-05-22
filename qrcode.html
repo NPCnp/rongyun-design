@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>榕韵亲子定制 - 扫码设计</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft YaHei', sans-serif; background: linear-gradient(135deg, #fdf8f0 0%, #f0e6d8 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .card { background: white; border-radius: 24px; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 100%; }
+        .logo { font-size: 4rem; margin-bottom: 16px; }
+        .title { color: #B84A3C; font-size: 1.5rem; font-weight: 600; margin-bottom: 8px; }
+        .subtitle { color: #6B6B6B; font-size: 0.9rem; margin-bottom: 24px; }
+        .badge { display: inline-block; background: #6B8E6B; color: white; padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; margin-bottom: 16px; }
+        .qrcode-box { background: white; border: 2px solid #E5DED5; border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+        .qrcode { width: 100%; max-width: 280px; border-radius: 12px; }
+        .hint { color: #888; font-size: 0.85rem; line-height: 1.6; }
+        .footer { margin-top: 24px; padding-top: 20px; border-top: 1px solid #E5DED5; color: #999; font-size: 0.75rem; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="logo">🎨</div>
+        <div class="title">榕韵亲子定制</div>
+        <div class="subtitle">自助设计 · 即印即得</div>
+        
+        <div class="badge">✅ 公网地址 - 游客可直接扫码</div>
+        
+        <div class="qrcode-box">
+            <img class="qrcode" id="qrcodeImg" src="" alt="扫码设计">
+        </div>
+        
+        <div class="hint">
+            📱 扫码进入自助设计页面<br>
+            ✨ 支持明信片、帆布袋定制<br>
+            🎁 福州文化主题素材
+        </div>
+        
+        <div class="footer">
+            三坊七巷店 | 营业时间: 09:00-21:00
+        </div>
+    </div>
+    
+    <script>
+        const url = 'https://npcnp.github.io/rongyun-design/';
+        const encodedUrl = encodeURIComponent(url);
+        document.getElementById('qrcodeImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedUrl}`;
+    </script>
+</body>
+</html>
