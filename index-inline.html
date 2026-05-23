@@ -511,10 +511,12 @@ function initFabric(keepContent = false, oldCanvasJson = null) {
         selection: true,
         fireRightClick: true,
         enableRetinaScaling: true,
-        allowTouchScrolling: false,
+        allowTouchScrolling: true,
         centeredScaling: true,
         touchEnabled: true
     });
+    
+    fabricCanvas.container.style.touchAction = 'none';
     
     fabricCanvas.setHeight(newSize.height);
     fabricCanvas.setWidth(newSize.width);
@@ -586,33 +588,12 @@ function initCanvasTouchEvents() {
         }
     });
     
-    let lastDistance = 0;
-    let lastAngle = 0;
+    fabricCanvas.on('object:moving', (e) => {
+        vibrate();
+    });
     
-    fabricCanvas.on('touch:gesture', function(e) {
-        e.preventDefault();
-        const target = e.target;
-        if (!target || target.type === 'canvas') return;
-        
-        if (e.state === 'start') {
-            lastDistance = e.distance;
-            lastAngle = e.angle;
-        } else if (e.state === 'change') {
-            const scale = e.distance / lastDistance;
-            const angleDiff = e.angle - lastAngle;
-            
-            fabricCanvas.setActiveObject(target);
-            target.scaleX *= scale;
-            target.scaleY *= scale;
-            target.angle += angleDiff;
-            
-            fabricCanvas.renderAll();
-            lastDistance = e.distance;
-            lastAngle = e.angle;
-        } else if (e.state === 'end') {
-            saveHistory();
-            autoSaveDraft();
-        }
+    fabricCanvas.on('object:scaling', (e) => {
+        vibrate();
     });
 }
 
