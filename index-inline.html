@@ -1172,7 +1172,9 @@ function addTextPattern(name, color) {
 }
 
 function addUserText(customText) {
+    console.log('addUserText called', { customText, fabricCanvas: !!fabricCanvas });
     if (!fabricCanvas) {
+        console.error('fabricCanvas is null or undefined');
         showToast('画布未初始化');
         return;
     }
@@ -1196,6 +1198,7 @@ function addUserText(customText) {
     saveHistory();
     showToast('已添加文字');
     vibrate();
+    console.log('Text added successfully');
     if (!customText) document.getElementById('userTextInput').value = content;
 }
 
