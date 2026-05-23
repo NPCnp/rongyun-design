@@ -1172,6 +1172,10 @@ function addTextPattern(name, color) {
 }
 
 function addUserText(customText) {
+    if (!fabricCanvas) {
+        showToast('画布未初始化');
+        return;
+    }
     const content = customText || document.getElementById('userTextInput').value.trim() || '福州·有福';
     const fontFamily = document.getElementById('fontFamilySelect').value;
     const fontSize = parseInt(document.getElementById('fontSizeSelect').value);
@@ -1648,6 +1652,11 @@ function initEventListeners() {
 }
 
 function init() {
+    if (typeof fabric === 'undefined') {
+        console.error('Fabric.js 未加载');
+        alert('Fabric.js 未加载，请刷新页面');
+        return;
+    }
     buildCategoryTabs();
     renderPatterns();
     initPresetPhrases();
