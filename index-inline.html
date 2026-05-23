@@ -516,8 +516,8 @@ function initFabric(keepContent = false, oldCanvasJson = null) {
         enableRetinaScaling: true,
         allowTouchScrolling: false,
         enableTouchScrolling: false,
-        uniScaleTransform: true,
-        centeredScaling: true,
+        uniScaleTransform: false,
+        centeredScaling: false,
         touchEnabled: true,
         targetFindTolerance: 30,
         selectionFullyContained: false,
@@ -555,10 +555,8 @@ function initFabric(keepContent = false, oldCanvasJson = null) {
     });
     fabricCanvas.on('object:moving', (e) => {
         constrainObjectPosition(e.target);
-        vibrate();
     });
     fabricCanvas.on('object:scaling', (e) => {
-        vibrate();
     });
     fabricCanvas.on('object:added', () => {
         scheduleUpdateMockup();
