@@ -21,7 +21,3 @@ Thumbs.db
 # 构建产物
 dist/
 build/
-
-# 大文件（超过 GitHub 100MB 限制）
-deploy/js/image-data.js
-js/image-data.js
