@@ -96,6 +96,8 @@
         .context-menu.active { display: block; }
         .context-menu-item { padding: 14px 24px; cursor: pointer; border-radius: 12px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
         .context-menu-item:hover { background: #FAF7F2; }
+        .context-menu-item.danger { color: #B84A3C; }
+        .context-menu-item.danger:hover { background: #FFF0F0; }
 
         .service-modal .modal-body { text-align: center; }
         .service-qrcode { width: 200px; height: 200px; margin: 20px auto; background: #fff; padding: 10px; border-radius: 16px; }
@@ -512,13 +514,16 @@ function initFabric(keepContent = false, oldCanvasJson = null) {
         fireRightClick: true,
         enableRetinaScaling: true,
         allowTouchScrolling: false,
+        enableTouchScrolling: false,
+        uniScaleTransform: true,
         centeredScaling: true,
         touchEnabled: true,
         targetFindTolerance: 30,
         selectionFullyContained: false,
         hoverCursor: 'pointer',
         movingCursor: 'grabbing',
-        freeDrawingCursor: 'crosshair'
+        freeDrawingCursor: 'crosshair',
+        renderOnAddRemove: true
     });
     
     fabricCanvas.selectionBorderColor = '#B84A3C';
@@ -529,12 +534,30 @@ function initFabric(keepContent = false, oldCanvasJson = null) {
     fabricCanvas.setHeight(newSize.height);
     fabricCanvas.setWidth(newSize.width);
     
+    fabric.Object.prototype.set({
+        cornerSize: 18,
+        cornerTouchSize: 44,
+        cornerColor: '#B84A3C',
+        borderColor: '#C9A87C',
+        borderScaleFactor: 2,
+        transparentCorners: false,
+        padding: 8
+    });
+    
     setCanvasBackground();
     
-    fabricCanvas.on('object:modified', () => {
+    fabricCanvas.on('object:modified', (e) => {
+        validateObjectSize(e.target);
         saveHistory();
         scheduleUpdateMockup();
         autoSaveDraft();
+    });
+    fabricCanvas.on('object:moving', (e) => {
+        constrainObjectPosition(e.target);
+        vibrate();
+    });
+    fabricCanvas.on('object:scaling', (e) => {
+        vibrate();
     });
     fabricCanvas.on('object:added', () => {
         scheduleUpdateMockup();
@@ -547,6 +570,7 @@ function initFabric(keepContent = false, oldCanvasJson = null) {
     fabricCanvas.on('selection:created', updateDeleteBtn);
     fabricCanvas.on('selection:updated', updateDeleteBtn);
     fabricCanvas.on('selection:cleared', updateDeleteBtn);
+    fabricCanvas.on('text:dblclick', handleTextDoubleClick);
     
     if (keepContent && oldCanvasJson) {
         fabricCanvas.loadFromJSON(oldCanvasJson, () => {
@@ -580,11 +604,185 @@ function scheduleUpdateMockup() {
     }, 100);
 }
 
+function validateObjectSize(obj) {
+    if (!obj) return;
+    
+    const canvasWidth = fabricCanvas.width;
+    const canvasHeight = fabricCanvas.height;
+    
+    if (obj.type === 'text' || obj.type === 'i-text') {
+        const minFontSize = 12;
+        const maxFontSize = canvasWidth * 0.5;
+        const currentFontSize = obj.fontSize * (obj.scaleX || 1);
+        
+        if (currentFontSize < minFontSize) {
+            const scale = minFontSize / obj.fontSize;
+            obj.set('scaleX', scale);
+            obj.set('scaleY', scale);
+        } else if (currentFontSize > maxFontSize) {
+            const scale = maxFontSize / obj.fontSize;
+            obj.set('scaleX', scale);
+            obj.set('scaleY', scale);
+        }
+    } else {
+        const minSize = 20;
+        const maxAreaRatio = 0.6;
+        const maxArea = canvasWidth * canvasHeight * maxAreaRatio;
+        
+        const currentWidth = obj.width * (obj.scaleX || 1);
+        const currentHeight = obj.height * (obj.scaleY || 1);
+        const currentArea = currentWidth * currentHeight;
+        
+        if (currentWidth < minSize || currentHeight < minSize) {
+            const scaleX = Math.max(minSize / obj.width, (obj.scaleX || 1));
+            const scaleY = Math.max(minSize / obj.height, (obj.scaleY || 1));
+            const scale = Math.max(scaleX, scaleY);
+            obj.set('scaleX', scale);
+            obj.set('scaleY', scale);
+        } else if (currentArea > maxArea) {
+            const scale = Math.sqrt(maxArea / currentArea);
+            obj.set('scaleX', (obj.scaleX || 1) * scale);
+            obj.set('scaleY', (obj.scaleY || 1) * scale);
+        }
+    }
+    
+    obj.setCoords();
+}
+
+function constrainObjectPosition(obj) {
+    if (!obj) return;
+    
+    const canvasWidth = fabricCanvas.width;
+    const canvasHeight = fabricCanvas.height;
+    
+    const objWidth = obj.width * (obj.scaleX || 1);
+    const objHeight = obj.height * (obj.scaleY || 1);
+    
+    let newLeft = obj.left;
+    let newTop = obj.top;
+    
+    const padding = 10;
+    
+    if (newLeft < padding) {
+        newLeft = padding;
+    }
+    if (newLeft + objWidth > canvasWidth - padding) {
+        newLeft = canvasWidth - objWidth - padding;
+    }
+    if (newTop < padding) {
+        newTop = padding;
+    }
+    if (newTop + objHeight > canvasHeight - padding) {
+        newTop = canvasHeight - objHeight - padding;
+    }
+    
+    obj.set({
+        left: newLeft,
+        top: newTop
+    });
+    
+    obj.setCoords();
+}
+
+function handleTextDoubleClick(e) {
+    const textObj = e.target;
+    if (!textObj || (textObj.type !== 'text' && textObj.type !== 'i-text')) return;
+    
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.7);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 3000;
+        padding: 20px;
+        box-sizing: border-box;
+    `;
+    
+    const input = document.createElement('textarea');
+    input.value = textObj.text;
+    input.style.cssText = `
+        width: 100%;
+        max-width: 400px;
+        height: 120px;
+        padding: 16px;
+        font-size: 18px;
+        font-family: 'Noto Serif SC', serif;
+        border: none;
+        border-radius: 16px;
+        resize: none;
+        margin-bottom: 16px;
+    `;
+    
+    const btnContainer = document.createElement('div');
+    btnContainer.style.display = 'flex';
+    btnContainer.style.gap = '12px';
+    
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = '取消';
+    cancelBtn.style.cssText = `
+        padding: 12px 24px;
+        border: none;
+        border-radius: 40px;
+        font-size: 1rem;
+        background: #E8D5C4;
+        color: #2C2C2C;
+    `;
+    
+    const okBtn = document.createElement('button');
+    okBtn.textContent = '确定';
+    okBtn.style.cssText = `
+        padding: 12px 24px;
+        border: none;
+        border-radius: 40px;
+        font-size: 1rem;
+        background: #B84A3C;
+        color: white;
+    `;
+    
+    btnContainer.appendChild(cancelBtn);
+    btnContainer.appendChild(okBtn);
+    modal.appendChild(input);
+    modal.appendChild(btnContainer);
+    
+    const closeModal = () => {
+        document.body.removeChild(modal);
+    };
+    
+    cancelBtn.addEventListener('click', closeModal);
+    
+    okBtn.addEventListener('click', () => {
+        const newText = input.value.trim();
+        if (newText) {
+            textObj.set('text', newText);
+            fabricCanvas.renderAll();
+            saveHistory();
+            showToast('文字已更新');
+        }
+        closeModal();
+    });
+    
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.ctrlKey) {
+            okBtn.click();
+        }
+    });
+    
+    document.body.appendChild(modal);
+    input.focus();
+}
+
 function initCanvasTouchEvents() {
     fabricCanvas.on('touch:longpress', (e) => {
         const target = e.target;
         if (target && target.type !== 'canvas') {
-            showContextMenu(e.e.touches[0].clientX, e.e.touches[0].clientY);
+            showContextMenu(e.e.touches[0].clientX, e.e.touches[0].clientY, target);
         }
     });
 
@@ -593,14 +791,6 @@ function initCanvasTouchEvents() {
         if (!target || target.type === 'canvas') {
             addUserText('福州·有福');
         }
-    });
-    
-    fabricCanvas.on('object:moving', (e) => {
-        vibrate();
-    });
-    
-    fabricCanvas.on('object:scaling', (e) => {
-        vibrate();
     });
     
     fabricCanvas.on('touch:gesture', (e) => {
@@ -612,18 +802,129 @@ function initCanvasTouchEvents() {
     });
 }
 
-function showContextMenu(x, y) {
+function showContextMenu(x, y, target) {
     const menu = document.getElementById('contextMenu');
-    menu.style.left = `${x}px`;
-    menu.style.top = `${y}px`;
+    if (!menu) {
+        createContextMenu();
+        return showContextMenu(x, y, target);
+    }
+    
+    const isText = target && (target.type === 'text' || target.type === 'i-text');
+    const isImage = target && target.type === 'image';
+    
+    let menuHTML = '';
+    
+    if (isText) {
+        menuHTML = `
+            <div class="context-menu-item" onclick="editTextFromMenu()">✏️ 编辑文字</div>
+            <div class="context-menu-item" onclick="duplicateSelected()">📋 复制</div>
+            <div class="context-menu-item" onclick="bringToFront()">🔼 置于顶层</div>
+            <div class="context-menu-item" onclick="sendToBack()">🔽 置于底层</div>
+            <div class="context-menu-item danger" onclick="deleteSelectedFromMenu()">🗑️ 删除</div>
+        `;
+    } else if (isImage) {
+        menuHTML = `
+            <div class="context-menu-item" onclick="duplicateSelected()">📋 复制</div>
+            <div class="context-menu-item" onclick="bringToFront()">🔼 置于顶层</div>
+            <div class="context-menu-item" onclick="sendToBack()">🔽 置于底层</div>
+            <div class="context-menu-item danger" onclick="deleteSelectedFromMenu()">🗑️ 删除</div>
+        `;
+    } else {
+        menuHTML = `
+            <div class="context-menu-item" onclick="duplicateSelected()">📋 复制</div>
+            <div class="context-menu-item" onclick="deleteSelectedFromMenu()">🗑️ 删除</div>
+        `;
+    }
+    
+    menu.innerHTML = menuHTML;
+    
+    const rect = menu.getBoundingClientRect();
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    
+    let menuX = x;
+    let menuY = y;
+    
+    if (menuX + rect.width > windowWidth - 16) {
+        menuX = windowWidth - rect.width - 16;
+    }
+    if (menuY + rect.height > windowHeight - 16) {
+        menuY = windowHeight - rect.height - 16;
+    }
+    
+    menu.style.left = `${menuX}px`;
+    menu.style.top = `${menuY}px`;
     menu.classList.add('active');
     
     document.addEventListener('click', closeContextMenu);
 }
 
+function createContextMenu() {
+    const menu = document.createElement('div');
+    menu.id = 'contextMenu';
+    menu.className = 'context-menu';
+    document.body.appendChild(menu);
+}
+
 function closeContextMenu() {
-    document.getElementById('contextMenu').classList.remove('active');
+    const menu = document.getElementById('contextMenu');
+    if (menu) {
+        menu.classList.remove('active');
+    }
     document.removeEventListener('click', closeContextMenu);
+}
+
+function editTextFromMenu() {
+    const activeObj = fabricCanvas.getActiveObject();
+    if (activeObj && (activeObj.type === 'text' || activeObj.type === 'i-text')) {
+        handleTextDoubleClick({ target: activeObj });
+    }
+    closeContextMenu();
+}
+
+function duplicateSelected() {
+    const activeObj = fabricCanvas.getActiveObject();
+    if (activeObj) {
+        activeObj.clone((cloned) => {
+            cloned.set({
+                left: activeObj.left + 20,
+                top: activeObj.top + 20
+            });
+            fabricCanvas.add(cloned);
+            fabricCanvas.setActiveObject(cloned);
+            fabricCanvas.renderAll();
+            saveHistory();
+            showToast('已复制');
+        });
+    }
+    closeContextMenu();
+}
+
+function bringToFront() {
+    const activeObj = fabricCanvas.getActiveObject();
+    if (activeObj) {
+        activeObj.bringToFront();
+        fabricCanvas.renderAll();
+        saveHistory();
+        showToast('已置于顶层');
+    }
+    closeContextMenu();
+}
+
+function sendToBack() {
+    const activeObj = fabricCanvas.getActiveObject();
+    if (activeObj) {
+        activeObj.sendToBack();
+        fabricCanvas.renderAll();
+        saveHistory();
+        showToast('已置于底层');
+    }
+    closeContextMenu();
+}
+
+function deleteSelectedFromMenu() {
+    deleteSelected();
+    closeContextMenu();
 }
 
 function switchMockupMode(mode) {
