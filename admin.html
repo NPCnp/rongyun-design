@@ -7,6 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
@@ -433,6 +435,53 @@
     
     <script>
         const STORAGE_KEY = 'diy_orders';
+        let firebaseDB = null;
+        
+        function initFirebase() {
+            const firebaseConfig = {
+                apiKey: "YOUR_API_KEY",
+                authDomain: "YOUR_PROJECT.firebaseapp.com",
+                databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+                projectId: "YOUR_PROJECT_ID",
+                storageBucket: "YOUR_PROJECT.appspot.com",
+                messagingSenderId: "YOUR_SENDER_ID",
+                appId: "YOUR_APP_ID"
+            };
+            
+            try {
+                if (typeof firebase !== 'undefined') {
+                    if (!firebase.apps.length) {
+                        firebase.initializeApp(firebaseConfig);
+                    }
+                    firebaseDB = firebase.database();
+                    console.log('Firebase 初始化成功');
+                    listenToFirebase();
+                }
+            } catch (e) {
+                console.log('Firebase 未配置，仅使用本地存储');
+            }
+        }
+        
+        function listenToFirebase() {
+            if (!firebaseDB) return;
+            
+            firebaseDB.ref('orders').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    const orders = Object.values(data);
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+                    loadOrders();
+                    showToast('订单数据已更新');
+                }
+            });
+        }
+        
+        function syncOrderToFirebase(order) {
+            if (!firebaseDB) return;
+            firebaseDB.ref('orders/' + order.orderNo).set(order).catch(err => {
+                console.log('Firebase 同步失败:', err);
+            });
+        }
         
         function showToast(msg) {
             const toast = document.getElementById('toast');
@@ -589,6 +638,7 @@
             if (order) {
                 order.status = '已制作';
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+                syncOrderToFirebase(order);
                 loadOrders();
                 showToast(`订单 #${orderNo} 已标记为已制作`);
             }
@@ -600,6 +650,7 @@
             if (order) {
                 order.status = '待制作';
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+                syncOrderToFirebase(order);
                 loadOrders();
                 showToast(`订单 #${orderNo} 已恢复为待制作`);
             }
@@ -612,6 +663,11 @@
             let orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             orders = orders.filter(o => o.orderNo !== orderNo);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+            if (firebaseDB) {
+                firebaseDB.ref('orders/' + orderNo).remove().catch(err => {
+                    console.log('Firebase 删除失败:', err);
+                });
+            }
             loadOrders();
             showToast(`订单 #${orderNo} 已删除`);
         }
@@ -627,6 +683,7 @@
             orders.forEach(o => {
                 if (selected.includes(o.orderNo) && o.status === '待制作') {
                     o.status = '已制作';
+                    syncOrderToFirebase(o);
                     count++;
                 }
             });
@@ -648,6 +705,13 @@
             let orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             orders = orders.filter(o => !selected.includes(o.orderNo));
             localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+            if (firebaseDB) {
+                selected.forEach(orderNo => {
+                    firebaseDB.ref('orders/' + orderNo).remove().catch(err => {
+                        console.log('Firebase 删除失败:', err);
+                    });
+                });
+            }
             loadOrders();
             document.getElementById('selectAll').checked = false;
             showToast(`已删除 ${selected.length} 个订单`);
@@ -658,6 +722,11 @@
                 return;
             }
             localStorage.removeItem(STORAGE_KEY);
+            if (firebaseDB) {
+                firebaseDB.ref('orders').remove().catch(err => {
+                    console.log('Firebase 清空失败:', err);
+                });
+            }
             loadOrders();
             showToast('所有订单已清空');
         }
@@ -817,6 +886,7 @@
             }
         });
         
+        initFirebase();
         loadOrders();
     </script>
 </body>
