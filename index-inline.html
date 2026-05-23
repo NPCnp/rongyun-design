@@ -511,12 +511,16 @@ function initFabric(keepContent = false, oldCanvasJson = null) {
         selection: true,
         fireRightClick: true,
         enableRetinaScaling: true,
-        allowTouchScrolling: true,
+        allowTouchScrolling: false,
         centeredScaling: true,
-        touchEnabled: true
+        touchEnabled: true,
+        targetFindTolerance: 20
     });
     
-    fabricCanvas.container.style.touchAction = 'none';
+    fabricCanvas.selectionBorderColor = '#B84A3C';
+    fabricCanvas.selectionColor = 'rgba(184, 74, 60, 0.2)';
+    fabricCanvas.selectionLineWidth = 2;
+    fabricCanvas.objectCaching = true;
     
     fabricCanvas.setHeight(newSize.height);
     fabricCanvas.setWidth(newSize.width);
@@ -883,91 +887,25 @@ function updateMockup() {
     const thumbImg = document.getElementById('previewThumbImg');
     if (!thumbImg) return;
     
-    const designURL = fabricCanvas.toDataURL({ format: 'png', multiplier: 2 });
-    const w = previewSizes[currentMockup].width;
-    const h = previewSizes[currentMockup].height;
-    const finalCanvas = document.createElement('canvas');
-    finalCanvas.width = w;
-    finalCanvas.height = h;
-    const ctx = finalCanvas.getContext('2d');
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-
-    const bgImg = new Image();
-    bgImg.onload = () => {
-        ctx.drawImage(bgImg, 0, 0, w, h);
-        const designImg = new Image();
-        designImg.onload = () => {
-            let dw, dh, dx, dy;
-            if (currentMockup === 'postcard') {
-                const padding = 30;
-                const scale = Math.min((w - padding) / (designImg.width / 2), (h - padding) / (designImg.height / 2));
-                dw = (designImg.width / 2) * scale;
-                dh = (designImg.height / 2) * scale;
-                dx = (w - dw) / 2;
-                dy = (h - dh) / 2;
-            } else {
-                const bagBody = { x: 60, y: 70, w: 330, h: 470 };
-                const maxWidth = bagBody.w * 0.95;
-                const maxHeight = bagBody.h * 0.95;
-                const scale = Math.min(maxWidth / (designImg.width / 2), maxHeight / (designImg.height / 2));
-                dw = (designImg.width / 2) * scale;
-                dh = (designImg.height / 2) * scale;
-                dx = bagBody.x + (bagBody.w - dw) / 2;
-                dy = bagBody.y + (bagBody.h - dh) / 2;
-            }
-            ctx.drawImage(designImg, 0, 0, designImg.width, designImg.height, dx, dy, dw, dh);
-            thumbImg.src = finalCanvas.toDataURL('image/png', 0.8);
-            updatePreviewModal();
-        };
-        designImg.src = designURL;
-    };
-    bgImg.src = mockupBg[currentMockup];
+    try {
+        const designURL = fabricCanvas.toDataURL({ format: 'png', multiplier: 1 });
+        thumbImg.src = designURL;
+        updatePreviewModal();
+    } catch (e) {
+        console.error('updateMockup error:', e);
+    }
 }
 
 function updatePreviewModal() {
     const previewImg = document.getElementById('previewImage');
     if (!previewImg) return;
     
-    const designURL = fabricCanvas.toDataURL({ format: 'png', multiplier: 3 });
-    const w = previewSizes[currentMockup].width;
-    const h = previewSizes[currentMockup].height;
-    const finalCanvas = document.createElement('canvas');
-    finalCanvas.width = w * 2;
-    finalCanvas.height = h * 2;
-    const ctx = finalCanvas.getContext('2d');
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-
-    const bgImg = new Image();
-    bgImg.onload = () => {
-        ctx.drawImage(bgImg, 0, 0, w * 2, h * 2);
-        const designImg = new Image();
-        designImg.onload = () => {
-            let dw, dh, dx, dy;
-            if (currentMockup === 'postcard') {
-                const padding = 60;
-                const scale = Math.min((w - padding) / (designImg.width / 3), (h - padding) / (designImg.height / 3));
-                dw = (designImg.width / 3) * scale * 2;
-                dh = (designImg.height / 3) * scale * 2;
-                dx = (w * 2 - dw) / 2;
-                dy = (h * 2 - dh) / 2;
-            } else {
-                const bagBody = { x: 60, y: 70, w: 330, h: 470 };
-                const maxWidth = bagBody.w * 0.95;
-                const maxHeight = bagBody.h * 0.95;
-                const scale = Math.min(maxWidth / (designImg.width / 3), maxHeight / (designImg.height / 3));
-                dw = (designImg.width / 3) * scale * 2;
-                dh = (designImg.height / 3) * scale * 2;
-                dx = bagBody.x * 2 + (bagBody.w * 2 - dw) / 2;
-                dy = bagBody.y * 2 + (bagBody.h * 2 - dh) / 2;
-            }
-            ctx.drawImage(designImg, 0, 0, designImg.width, designImg.height, dx, dy, dw, dh);
-            previewImg.src = finalCanvas.toDataURL('image/png', 1.0);
-        };
-        designImg.src = designURL;
-    };
-    bgImg.src = mockupBg[currentMockup];
+    try {
+        const designURL = fabricCanvas.toDataURL({ format: 'png', multiplier: 2 });
+        previewImg.src = designURL;
+    } catch (e) {
+        console.error('updatePreviewModal error:', e);
+    }
 }
 
 function exportImage() {
