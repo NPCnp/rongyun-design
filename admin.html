@@ -7,8 +7,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
@@ -435,52 +433,132 @@
     
     <script>
         const STORAGE_KEY = 'diy_orders';
-        let firebaseDB = null;
+        let jsonBinDB = null;
+        const JSONBIN_BIN_ID = 'YOUR_BIN_ID';
+        const JSONBIN_API_KEY = 'YOUR_API_KEY';
         
-        function initFirebase() {
-            const firebaseConfig = {
-                apiKey: "YOUR_API_KEY",
-                authDomain: "YOUR_PROJECT.firebaseapp.com",
-                databaseURL: "https://YOUR_PROJECT.firebaseio.com",
-                projectId: "YOUR_PROJECT_ID",
-                storageBucket: "YOUR_PROJECT.appspot.com",
-                messagingSenderId: "YOUR_SENDER_ID",
-                appId: "YOUR_APP_ID"
-            };
-            
+        function initJsonBin() {
             try {
-                if (typeof firebase !== 'undefined') {
-                    if (!firebase.apps.length) {
-                        firebase.initializeApp(firebaseConfig);
-                    }
-                    firebaseDB = firebase.database();
-                    console.log('Firebase 初始化成功');
-                    listenToFirebase();
+                if (typeof fetch !== 'undefined') {
+                    jsonBinDB = {
+                        binId: JSONBIN_BIN_ID,
+                        apiKey: JSONBIN_API_KEY
+                    };
+                    console.log('JSONBin 初始化成功');
+                    listenToJsonBin();
                 }
             } catch (e) {
-                console.log('Firebase 未配置，仅使用本地存储');
+                console.log('JSONBin 未配置，仅使用本地存储');
             }
         }
         
-        function listenToFirebase() {
-            if (!firebaseDB) return;
+        async function listenToJsonBin() {
+            if (!jsonBinDB || jsonBinDB.binId === 'YOUR_BIN_ID') return;
             
-            firebaseDB.ref('orders').on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    const orders = Object.values(data);
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
-                    loadOrders();
-                    showToast('订单数据已更新');
+            setInterval(async () => {
+                try {
+                    const response = await fetch(`https://api.jsonbin.io/v3/b/${jsonBinDB.binId}/latest`, {
+                        method: 'GET',
+                        headers: {
+                            'X-Master-Key': jsonBinDB.apiKey
+                        }
+                    });
+                    const result = await response.json();
+                    if (result.record?.orders) {
+                        const cloudOrders = result.record.orders;
+                        const localOrders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                        
+                        const localMaxOrderNo = localOrders.length > 0 ? Math.max(...localOrders.map(o => o.orderNo)) : 0;
+                        const cloudNewOrders = cloudOrders.filter(o => o.orderNo > localMaxOrderNo);
+                        
+                        if (cloudNewOrders.length > 0) {
+                            const merged = [...localOrders, ...cloudNewOrders];
+                            localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+                            loadOrders();
+                            showToast(`收到 ${cloudNewOrders.length} 个新订单`);
+                        }
+                    }
+                } catch (e) {
+                    console.log('JSONBin 读取失败:', e);
                 }
-            });
+            }, 5000);
         }
         
-        function syncOrderToFirebase(order) {
-            if (!firebaseDB) return;
-            firebaseDB.ref('orders/' + order.orderNo).set(order).catch(err => {
-                console.log('Firebase 同步失败:', err);
-            });
+        async function syncOrderToJsonBin(order) {
+            if (!jsonBinDB || jsonBinDB.binId === 'YOUR_BIN_ID') return;
+            
+            try {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${jsonBinDB.binId}/latest`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Master-Key': jsonBinDB.apiKey
+                    }
+                });
+                const result = await response.json();
+                let orders = result.record?.orders || [];
+                
+                const index = orders.findIndex(o => o.orderNo === order.orderNo);
+                if (index >= 0) {
+                    orders[index] = order;
+                } else {
+                    orders.push(order);
+                }
+                
+                await fetch(`https://api.jsonbin.io/v3/b/${jsonBinDB.binId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': jsonBinDB.apiKey
+                    },
+                    body: JSON.stringify({ orders })
+                });
+            } catch (e) {
+                console.log('JSONBin 同步失败:', e);
+            }
+        }
+        
+        async function deleteOrderFromJsonBin(orderNo) {
+            if (!jsonBinDB || jsonBinDB.binId === 'YOUR_BIN_ID') return;
+            
+            try {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${jsonBinDB.binId}/latest`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Master-Key': jsonBinDB.apiKey
+                    }
+                });
+                const result = await response.json();
+                let orders = result.record?.orders || [];
+                orders = orders.filter(o => o.orderNo !== orderNo);
+                
+                await fetch(`https://api.jsonbin.io/v3/b/${jsonBinDB.binId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': jsonBinDB.apiKey
+                    },
+                    body: JSON.stringify({ orders })
+                });
+            } catch (e) {
+                console.log('JSONBin 删除失败:', e);
+            }
+        }
+        
+        async function clearAllFromJsonBin() {
+            if (!jsonBinDB || jsonBinDB.binId === 'YOUR_BIN_ID') return;
+            
+            try {
+                await fetch(`https://api.jsonbin.io/v3/b/${jsonBinDB.binId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': jsonBinDB.apiKey
+                    },
+                    body: JSON.stringify({ orders: [] })
+                });
+            } catch (e) {
+                console.log('JSONBin 清空失败:', e);
+            }
         }
         
         function showToast(msg) {
@@ -638,7 +716,7 @@
             if (order) {
                 order.status = '已制作';
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
-                syncOrderToFirebase(order);
+                syncOrderToJsonBin(order);
                 loadOrders();
                 showToast(`订单 #${orderNo} 已标记为已制作`);
             }
@@ -650,7 +728,7 @@
             if (order) {
                 order.status = '待制作';
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
-                syncOrderToFirebase(order);
+                syncOrderToJsonBin(order);
                 loadOrders();
                 showToast(`订单 #${orderNo} 已恢复为待制作`);
             }
@@ -663,11 +741,7 @@
             let orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             orders = orders.filter(o => o.orderNo !== orderNo);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
-            if (firebaseDB) {
-                firebaseDB.ref('orders/' + orderNo).remove().catch(err => {
-                    console.log('Firebase 删除失败:', err);
-                });
-            }
+            deleteOrderFromJsonBin(orderNo);
             loadOrders();
             showToast(`订单 #${orderNo} 已删除`);
         }
@@ -683,7 +757,7 @@
             orders.forEach(o => {
                 if (selected.includes(o.orderNo) && o.status === '待制作') {
                     o.status = '已制作';
-                    syncOrderToFirebase(o);
+                    syncOrderToJsonBin(o);
                     count++;
                 }
             });
@@ -705,13 +779,9 @@
             let orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             orders = orders.filter(o => !selected.includes(o.orderNo));
             localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
-            if (firebaseDB) {
-                selected.forEach(orderNo => {
-                    firebaseDB.ref('orders/' + orderNo).remove().catch(err => {
-                        console.log('Firebase 删除失败:', err);
-                    });
-                });
-            }
+            selected.forEach(orderNo => {
+                deleteOrderFromJsonBin(orderNo);
+            });
             loadOrders();
             document.getElementById('selectAll').checked = false;
             showToast(`已删除 ${selected.length} 个订单`);
@@ -722,11 +792,7 @@
                 return;
             }
             localStorage.removeItem(STORAGE_KEY);
-            if (firebaseDB) {
-                firebaseDB.ref('orders').remove().catch(err => {
-                    console.log('Firebase 清空失败:', err);
-                });
-            }
+            clearAllFromJsonBin();
             loadOrders();
             showToast('所有订单已清空');
         }
@@ -886,7 +952,7 @@
             }
         });
         
-        initFirebase();
+        initJsonBin();
         loadOrders();
     </script>
 </body>
