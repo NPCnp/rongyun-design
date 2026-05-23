@@ -536,11 +536,13 @@ function initFabric(keepContent = false, oldCanvasJson = null) {
     fabricCanvas.setWidth(newSize.width);
     
     fabric.Object.prototype.set({
-        cornerSize: 20,
-        cornerTouchSize: 44,
+        cornerSize: 24,
+        cornerTouchSize: 50,
         cornerColor: '#B84A3C',
         borderColor: '#C9A87C',
         borderScaleFactor: 2,
+        transparentCorners: false,
+        cornerStyle: 'rect',
         transparentCorners: false,
         padding: 8
     });
