@@ -1089,7 +1089,7 @@ function zoomOut() {
         return;
     }
     let newScale = (obj.scaleX || 1) - 0.1;
-    newScale = Math.max(newScale, 0.3);
+    if (newScale < 0.1) newScale = 0.1;
     obj.set({ scaleX: newScale, scaleY: newScale });
     fabricCanvas.renderAll();
     saveHistory();
