@@ -1089,7 +1089,7 @@ function zoomOut() {
         return;
     }
     let newScale = (obj.scaleX || 1) - 0.1;
-    if (newScale < 0.1) newScale = 0.1;
+    newScale = Math.max(newScale, 0.1);
     obj.set({ scaleX: newScale, scaleY: newScale });
     fabricCanvas.renderAll();
     saveHistory();
@@ -1266,10 +1266,11 @@ function addUserText(customText) {
     console.log('addUserText called', { customText, fabricCanvas: !!fabricCanvas });
     if (!fabricCanvas) {
         console.error('fabricCanvas is null or undefined');
-        showToast('画布未初始化');
+        alert('画布未初始化，请刷新页面');
         return;
     }
     const content = customText || document.getElementById('userTextInput').value.trim() || '福州·有福';
+    console.log('Adding text:', content);
     const fontFamily = document.getElementById('fontFamilySelect').value;
     const fontSize = parseInt(document.getElementById('fontSizeSelect').value);
     const color = document.getElementById('textColorPicker').value;
@@ -1287,7 +1288,7 @@ function addUserText(customText) {
     fabricCanvas.setActiveObject(obj);
     fabricCanvas.renderAll();
     saveHistory();
-    showToast('已添加文字');
+    showToast('已添加文字: ' + content);
     vibrate();
     console.log('Text added successfully');
     if (!customText) document.getElementById('userTextInput').value = content;
