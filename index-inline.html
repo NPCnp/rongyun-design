@@ -781,6 +781,69 @@ function handleTextDoubleClick(e) {
 }
 
 function initCanvasTouchEvents() {
+    let singleFingerScale = {
+        active: false,
+        startY: 0,
+        startScale: 1,
+        target: null,
+        timer: null
+    };
+
+    const canvasEl = document.getElementById('designCanvas');
+
+    canvasEl.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        const touch = e.touches[0];
+        const target = fabricCanvas.findTarget(touch);
+        if (!target || target.type === 'canvas') return;
+
+        singleFingerScale.target = target;
+        singleFingerScale.startY = touch.clientY;
+        singleFingerScale.startScale = target.scaleX || 1;
+
+        singleFingerScale.timer = setTimeout(() => {
+            singleFingerScale.active = true;
+            showToast('上下滑动缩放元素');
+            vibrate(20);
+            e.preventDefault();
+        }, 500);
+    }, { passive: false });
+
+    canvasEl.addEventListener('touchmove', (e) => {
+        if (!singleFingerScale.active || e.touches.length !== 1) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        const deltaY = touch.clientY - singleFingerScale.startY;
+        let scaleChange = deltaY / 10 * -0.05;
+        let newScale = singleFingerScale.startScale + scaleChange;
+        newScale = Math.min(Math.max(newScale, 0.3), 3);
+        if (singleFingerScale.target) {
+            singleFingerScale.target.set({
+                scaleX: newScale,
+                scaleY: newScale
+            });
+            fabricCanvas.renderAll();
+            updateMockup();
+        }
+    }, { passive: false });
+
+    canvasEl.addEventListener('touchend', () => {
+        if (singleFingerScale.timer) clearTimeout(singleFingerScale.timer);
+        if (singleFingerScale.active) {
+            saveHistory();
+            autoSaveDraft();
+            singleFingerScale.active = false;
+        }
+        singleFingerScale.target = null;
+        singleFingerScale.timer = null;
+    });
+
+    canvasEl.addEventListener('touchcancel', () => {
+        if (singleFingerScale.timer) clearTimeout(singleFingerScale.timer);
+        singleFingerScale.active = false;
+        singleFingerScale.target = null;
+    });
+
     fabricCanvas.on('touch:longpress', (e) => {
         const target = e.target;
         if (target && target.type !== 'canvas') {
@@ -794,10 +857,10 @@ function initCanvasTouchEvents() {
             addUserText('福州·有福');
         }
     });
-    
+
     fabricCanvas.on('touch:gesture', (e) => {
     });
-    
+
     fabricCanvas.on('touch:drag', (e) => {
     });
 }
