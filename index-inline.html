@@ -179,9 +179,7 @@
         <img id="previewImage" src="" alt="预览">
     </div>
     <div class="preview-controls">
-        <button class="preview-btn" id="exportBtn">📸 导出图片</button>
         <button class="preview-btn" id="switchMockupBtn">🔄 切换模式</button>
-        <button class="preview-btn" id="generatePosterBtn">🎭 生成海报</button>
     </div>
 </div>
 
@@ -785,7 +783,8 @@ function initCanvasTouchEvents() {
         startY: 0,
         startScale: 1,
         target: null,
-        timer: null
+        timer: null,
+        hasMoved: false
     };
 
     const canvasEl = document.getElementById('designCanvas');
@@ -796,26 +795,28 @@ function initCanvasTouchEvents() {
         const target = fabricCanvas.findTarget(touch);
         if (!target || target.type === 'canvas') return;
 
+        singleFingerScale.hasMoved = false;
         singleFingerScale.target = target;
         singleFingerScale.startY = touch.clientY;
         singleFingerScale.startScale = target.scaleX || 1;
 
         singleFingerScale.timer = setTimeout(() => {
-            singleFingerScale.active = true;
-            showToast('上下滑动缩放元素');
-            vibrate(20);
-            e.preventDefault();
+            if (!singleFingerScale.hasMoved) {
+                singleFingerScale.active = true;
+                showToast('上下滑动缩放元素');
+                vibrate(20);
+            }
         }, 500);
-    }, { passive: false });
+    }, { passive: true });
 
     canvasEl.addEventListener('touchmove', (e) => {
+        singleFingerScale.hasMoved = true;
         if (!singleFingerScale.active || e.touches.length !== 1) return;
-        e.preventDefault();
         const touch = e.touches[0];
         const deltaY = touch.clientY - singleFingerScale.startY;
         let scaleChange = deltaY / 10 * -0.05;
         let newScale = singleFingerScale.startScale + scaleChange;
-        newScale = Math.min(Math.max(newScale, 0.3), 3);
+        newScale = Math.min(Math.max(newScale, 0.1), 3);
         if (singleFingerScale.target) {
             singleFingerScale.target.set({
                 scaleX: newScale,
@@ -835,12 +836,14 @@ function initCanvasTouchEvents() {
         }
         singleFingerScale.target = null;
         singleFingerScale.timer = null;
+        singleFingerScale.hasMoved = false;
     });
 
     canvasEl.addEventListener('touchcancel', () => {
         if (singleFingerScale.timer) clearTimeout(singleFingerScale.timer);
         singleFingerScale.active = false;
         singleFingerScale.target = null;
+        singleFingerScale.hasMoved = false;
     });
 
     fabricCanvas.on('touch:longpress', (e) => {
@@ -1658,7 +1661,6 @@ function initEventListeners() {
     
     document.getElementById('previewThumb').addEventListener('click', openPreviewModal);
     document.getElementById('previewClose').addEventListener('click', closePreviewModal);
-    document.getElementById('exportBtn').addEventListener('click', exportImage);
     document.getElementById('switchMockupBtn').addEventListener('click', () => {
         const newMode = currentMockup === 'postcard' ? 'tote' : 'postcard';
         switchMockupMode(newMode);
@@ -1666,7 +1668,6 @@ function initEventListeners() {
             updatePreviewModal();
         }, 300);
     });
-    document.getElementById('generatePosterBtn').addEventListener('click', generatePoster);
     
     document.getElementById('orderModalClose').addEventListener('click', closeOrderModal);
     document.getElementById('submitOrderBtn').addEventListener('click', submitOrder);
