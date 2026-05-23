@@ -514,7 +514,11 @@ function initFabric(keepContent = false, oldCanvasJson = null) {
         allowTouchScrolling: false,
         centeredScaling: true,
         touchEnabled: true,
-        targetFindTolerance: 20
+        targetFindTolerance: 30,
+        selectionFullyContained: false,
+        hoverCursor: 'pointer',
+        movingCursor: 'grabbing',
+        freeDrawingCursor: 'crosshair'
     });
     
     fabricCanvas.selectionBorderColor = '#B84A3C';
@@ -597,6 +601,14 @@ function initCanvasTouchEvents() {
     
     fabricCanvas.on('object:scaling', (e) => {
         vibrate();
+    });
+    
+    fabricCanvas.on('touch:gesture', (e) => {
+        e.e.preventDefault();
+    });
+    
+    fabricCanvas.on('touch:drag', (e) => {
+        e.e.preventDefault();
     });
 }
 
