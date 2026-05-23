@@ -554,7 +554,6 @@ function initFabric(keepContent = false, oldCanvasJson = null) {
         autoSaveDraft();
     });
     fabricCanvas.on('object:moving', (e) => {
-        constrainObjectPosition(e.target);
     });
     fabricCanvas.on('object:scaling', (e) => {
     });
@@ -1449,6 +1448,10 @@ function submitOrder() {
     
     vibrate([50, 50, 50]);
     showToast('订单已提交！');
+    
+    setTimeout(() => {
+        window.location.href = 'admin.html';
+    }, 2000);
 }
 
 function copyPickupCode() {
