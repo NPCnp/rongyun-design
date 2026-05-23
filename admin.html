@@ -7,7 +7,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght=300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/leancloud-storage@4.15.2/dist/av-min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
@@ -408,8 +407,14 @@
                 <button class="btn btn-danger" onclick="batchDelete()">🗑️ 批量删除</button>
             </div>
             <div class="btn-group">
+                <label class="btn btn-secondary" style="cursor: pointer;">
+                    📤 导入订单
+                    <input type="file" accept=".json" style="display: none;" onchange="importOrders(event)">
+                </label>
                 <button class="btn btn-secondary" onclick="exportAllOrders()">💾 导出 JSON</button>
                 <button class="btn btn-secondary" onclick="exportOrdersCSV()">📊 导出 CSV</button>
+            </div>
+            <div class="btn-group">
                 <button class="btn btn-primary" onclick="exportDesignsZip()">📁 批量导出设计图</button>
             </div>
             <button class="btn btn-danger" onclick="clearAllOrders()">🗑️ 清空所有订单</button>
@@ -434,134 +439,65 @@
     
     <script>
         const STORAGE_KEY = 'diy_orders';
-        let leanCloudDB = null;
-        const LC_APP_ID = 'YOUR_APP_ID';
-        const LC_APP_KEY = 'YOUR_APP_KEY';
-        const LC_SERVER_URL = 'YOUR_SERVER_URL';
-        
-        function initLeanCloud() {
-            try {
-                if (typeof AV !== 'undefined') {
-                    AV.init({
-                        appId: LC_APP_ID,
-                        appKey: LC_APP_KEY,
-                        serverURL: LC_SERVER_URL
-                    });
-                    leanCloudDB = true;
-                    console.log('LeanCloud 初始化成功');
-                    listenToLeanCloud();
-                }
-            } catch (e) {
-                console.log('LeanCloud 未配置，仅使用本地存储');
-            }
-        }
-        
-        async function listenToLeanCloud() {
-            if (!leanCloudDB || LC_APP_ID === 'YOUR_APP_ID') return;
-            
-            const loadNewOrders = async () => {
+
+        function importOrders(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
                 try {
-                    const query = new AV.Query('Order');
-                    query.descending('createdAt');
-                    query.limit(100);
-                    const results = await query.find();
-                    const cloudOrders = results.map(obj => obj.toJSON());
-                    
+                    const importedOrders = JSON.parse(e.target.result);
+                    if (!Array.isArray(importedOrders)) {
+                        showToast('导入失败：文件格式不正确');
+                        return;
+                    }
+
                     const localOrders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
                     const localOrderNos = new Set(localOrders.map(o => o.orderNo));
-                    const cloudNewOrders = cloudOrders.filter(o => !localOrderNos.has(o.orderNo));
-                    
-                    if (cloudNewOrders.length > 0) {
-                        const merged = [...localOrders, ...cloudNewOrders];
-                        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-                        loadOrders();
-                        showToast(`收到 ${cloudNewOrders.length} 个新订单`);
-                    }
-                } catch (e) {
-                    console.log('LeanCloud 读取失败:', e);
+
+                    let newOrders = 0;
+                    importedOrders.forEach(order => {
+                        if (!localOrderNos.has(order.orderNo)) {
+                            localOrders.push(order);
+                            newOrders++;
+                        }
+                    });
+
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(localOrders));
+                    loadOrders();
+                    showToast(`成功导入 ${newOrders} 个新订单！`);
+                } catch (err) {
+                    showToast('导入失败：无法解析文件');
                 }
             };
-            
-            await loadNewOrders();
-            setInterval(loadNewOrders, 5000);
+            reader.readAsText(file);
+            event.target.value = '';
         }
-        
-        async function syncOrderToLeanCloud(order) {
-            if (!leanCloudDB || LC_APP_ID === 'YOUR_APP_ID') return;
-            
-            try {
-                const query = new AV.Query('Order');
-                query.equalTo('orderNo', order.orderNo);
-                const results = await query.find();
-                
-                let orderObj;
-                if (results.length > 0) {
-                    orderObj = results[0];
-                } else {
-                    const Order = AV.Object.extend('Order');
-                    orderObj = new Order();
-                }
-                
-                Object.keys(order).forEach(key => {
-                    orderObj.set(key, order[key]);
-                });
-                await orderObj.save();
-            } catch (e) {
-                console.log('LeanCloud 同步失败:', e);
-            }
-        }
-        
-        async function deleteOrderFromLeanCloud(orderNo) {
-            if (!leanCloudDB || LC_APP_ID === 'YOUR_APP_ID') return;
-            
-            try {
-                const query = new AV.Query('Order');
-                query.equalTo('orderNo', orderNo);
-                const results = await query.find();
-                if (results.length > 0) {
-                    await results[0].destroy();
-                }
-            } catch (e) {
-                console.log('LeanCloud 删除失败:', e);
-            }
-        }
-        
-        async function clearAllFromLeanCloud() {
-            if (!leanCloudDB || LC_APP_ID === 'YOUR_APP_ID') return;
-            
-            try {
-                const query = new AV.Query('Order');
-                query.limit(1000);
-                const results = await query.find();
-                await AV.Object.destroyAll(results);
-            } catch (e) {
-                console.log('LeanCloud 清空失败:', e);
-            }
-        }
-        
+
         function showToast(msg) {
             const toast = document.getElementById('toast');
             toast.textContent = msg;
             toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 2000);
         }
-        
+
         function loadOrders() {
             const orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             updateStats(orders);
             renderOrders(orders);
         }
-        
+
         function updateStats(orders) {
             const total = orders.length;
             const pending = orders.filter(o => o.status === '待制作').length;
             const completed = orders.filter(o => o.status === '已制作').length;
-            
+
             document.getElementById('totalOrders').textContent = total;
             document.getElementById('pendingOrders').textContent = pending;
             document.getElementById('completedOrders').textContent = completed;
         }
-        
+
         function formatTime(timeStr) {
             if (!timeStr) return '';
             if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(timeStr)) {
@@ -581,7 +517,7 @@
                 return timeStr;
             }
         }
-        
+
         function debounce(func, delay = 300) {
             let timer = null;
             return function(...args) {
@@ -589,22 +525,22 @@
                 timer = setTimeout(() => func.apply(this, args), delay);
             };
         }
-        
+
         const debouncedRender = debounce(() => renderOrders());
-        
+
         function renderOrders(orders = null) {
             if (!orders) {
                 orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             }
-            
+
             const grid = document.getElementById('ordersGrid');
             const noOrders = document.getElementById('noOrders');
-            
+
             const searchText = document.getElementById('searchInput').value.toLowerCase();
             const statusFilter = document.getElementById('statusFilter').value;
-            
+
             let filtered = orders;
-            
+
             if (searchText) {
                 filtered = filtered.filter(o => 
                     o.name.toLowerCase().includes(searchText) || 
@@ -612,106 +548,89 @@
                     (o.pickupCode && o.pickupCode.toString().includes(searchText))
                 );
             }
-            
+
             if (statusFilter !== 'all') {
                 filtered = filtered.filter(o => o.status === statusFilter);
             }
-            
+
             filtered.sort((a, b) => b.orderNo - a.orderNo);
-            
+
             if (filtered.length === 0) {
                 grid.innerHTML = '';
                 noOrders.style.display = 'block';
                 return;
             }
-            
+
             noOrders.style.display = 'none';
-            
+
             grid.innerHTML = filtered.map(order => `
-                <div class="order-card" data-order-no="${order.orderNo}">
-                    <input type="checkbox" class="order-select" value="${order.orderNo}">
+                <div class="order-card">
+                    <input type="checkbox" class="order-select" data-order-no="${order.orderNo}" onchange="checkSelectAll()">
                     <div class="order-card-header">
                         <span class="order-no">#${order.orderNo}</span>
-                        <span class="order-status ${order.status === '待制作' ? 'pending' : 'completed'}">
-                            ${order.status}
-                        </span>
+                        <span class="order-status ${order.status === '已制作' ? 'completed' : 'pending'}">${order.status}</span>
                     </div>
+                    ${order.pickupCode ? `
                     <div class="pickup-code">
-                        🔑 取件码：${order.pickupCode || 'N/A'}
-                        <button class="copy-btn" onclick="copyPickupCode('${order.pickupCode}')">📋 复制</button>
+                        <span>取件码: ${order.pickupCode}</span>
+                        <button class="copy-btn" onclick="copyPickupCode(event)">复制</button>
                     </div>
+                    ` : ''}
                     <div class="order-info">
-                        <div><strong>👤 姓名：</strong>${order.name}</div>
-                        <div><strong>📱 手机：</strong>${order.phone}</div>
-                        <div><strong>🕐 时间：</strong>${formatTime(order.time)}</div>
+                        <div><strong>姓名:</strong> ${order.name}</div>
+                        <div><strong>手机:</strong> ${order.phone}</div>
+                        <div><strong>下单时间:</strong> ${formatTime(order.time)}</div>
                     </div>
-                    <div class="order-design" onclick="showFullImage('${order.design}')">
+                    ${order.design ? `
+                    <div class="order-design" onclick="openImageModal('${order.design}')">
                         <img src="${order.design}" alt="设计图">
                     </div>
+                    ` : ''}
                     <div class="order-actions">
-                        ${order.status === '待制作' ? 
-                            `<button class="btn btn-primary" onclick="markComplete(${order.orderNo})">✅ 标记已制作</button>` : 
-                            `<button class="btn btn-secondary" onclick="markPending(${order.orderNo})">🔄 恢复待制作</button>`
-                        }
-                        <button class="btn btn-secondary" onclick="exportOrderImage(${order.orderNo})">📷 导出图片</button>
+                        ${order.status === '待制作' ? `
+                            <button class="btn btn-primary" onclick="markComplete(${order.orderNo})">✅ 标记完成</button>
+                        ` : `
+                            <button class="btn btn-secondary" onclick="markPending(${order.orderNo})">⏳ 恢复待制作</button>
+                        `}
                         <button class="btn btn-danger" onclick="deleteOrder(${order.orderNo})">🗑️ 删除</button>
                     </div>
                 </div>
             `).join('');
         }
-        
-        function copyPickupCode(code) {
-            if (!code || code === 'N/A') {
-                showToast('没有取件码可复制');
-                return;
-            }
-            navigator.clipboard.writeText(code.toString()).then(() => {
-                showToast('已复制取件码');
+
+        function copyPickupCode(event) {
+            event.stopPropagation();
+            const codeElement = event.target.parentElement.querySelector('span');
+            const code = codeElement.textContent.split(': ')[1];
+            navigator.clipboard.writeText(code).then(() => {
+                showToast('取件码已复制');
             }).catch(() => {
-                showToast('复制失败，请手动复制');
+                showToast('复制失败');
             });
         }
-        
-        function filterByStatus(status) {
-            document.getElementById('statusFilter').value = status;
-            renderOrders();
-        }
-        
-        function toggleSelectAll() {
-            const checkboxes = document.querySelectorAll('.order-select');
-            const selectAll = document.getElementById('selectAll');
-            checkboxes.forEach(cb => cb.checked = selectAll.checked);
-        }
-        
-        function getSelectedOrders() {
-            const checkboxes = document.querySelectorAll('.order-select:checked');
-            return Array.from(checkboxes).map(cb => parseInt(cb.value));
-        }
-        
+
         function markComplete(orderNo) {
             const orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             const order = orders.find(o => o.orderNo === orderNo);
             if (order) {
                 order.status = '已制作';
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
-                syncOrderToJsonBin(order);
                 loadOrders();
                 showToast(`订单 #${orderNo} 已标记为已制作`);
             }
         }
-        
+
         function markPending(orderNo) {
             const orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             const order = orders.find(o => o.orderNo === orderNo);
             if (order) {
                 order.status = '待制作';
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
-                syncOrderToJsonBin(order);
                 loadOrders();
                 showToast(`订单 #${orderNo} 已恢复为待制作`);
             }
         }
-        
+
         function deleteOrder(orderNo) {
             if (!confirm(`确定要删除订单 #${orderNo} 吗？此操作不可撤销。`)) {
                 return;
@@ -719,11 +638,32 @@
             let orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             orders = orders.filter(o => o.orderNo !== orderNo);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
-            deleteOrderFromLeanCloud(orderNo);
             loadOrders();
             showToast(`订单 #${orderNo} 已删除`);
         }
-        
+
+        function filterByStatus(status) {
+            document.getElementById('statusFilter').value = status;
+            renderOrders();
+        }
+
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const orderCheckboxes = document.querySelectorAll('.order-select');
+            orderCheckboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+        }
+
+        function checkSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const orderCheckboxes = document.querySelectorAll('.order-select');
+            selectAllCheckbox.checked = [...orderCheckboxes].every(cb => cb.checked);
+        }
+
+        function getSelectedOrders() {
+            const checkboxes = document.querySelectorAll('.order-select:checked');
+            return [...checkboxes].map(cb => parseInt(cb.dataset.orderNo));
+        }
+
         function batchMarkComplete() {
             const selected = getSelectedOrders();
             if (selected.length === 0) {
@@ -735,7 +675,6 @@
             orders.forEach(o => {
                 if (selected.includes(o.orderNo) && o.status === '待制作') {
                     o.status = '已制作';
-                    syncOrderToLeanCloud(o);
                     count++;
                 }
             });
@@ -744,7 +683,7 @@
             document.getElementById('selectAll').checked = false;
             showToast(`已将 ${count} 个订单标记为已制作`);
         }
-        
+
         function batchDelete() {
             const selected = getSelectedOrders();
             if (selected.length === 0) {
@@ -757,28 +696,24 @@
             let orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             orders = orders.filter(o => !selected.includes(o.orderNo));
             localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
-            selected.forEach(orderNo => {
-                deleteOrderFromLeanCloud(orderNo);
-            });
             loadOrders();
             document.getElementById('selectAll').checked = false;
             showToast(`已删除 ${selected.length} 个订单`);
         }
-        
+
         function clearAllOrders() {
             if (!confirm('⚠️ 确定要清空所有订单吗？此操作不可撤销！')) {
                 return;
             }
             localStorage.removeItem(STORAGE_KEY);
-            clearAllFromLeanCloud();
             loadOrders();
             showToast('所有订单已清空');
         }
-        
+
         function exportOrderImage(orderNo) {
             const orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             const order = orders.find(o => o.orderNo === orderNo);
-            if (order) {
+            if (order && order.design) {
                 const link = document.createElement('a');
                 link.download = `order_${order.orderNo}_${order.name}.png`;
                 link.href = order.design;
@@ -786,7 +721,34 @@
                 showToast('设计图已导出');
             }
         }
-        
+
+        function exportOrdersCSV() {
+            const orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            if (orders.length === 0) {
+                showToast('暂无订单可导出');
+                return;
+            }
+
+            const headers = ['订单号', '姓名', '手机', '取件码', '状态', '下单时间'];
+            const csvData = [headers.join(',')];
+
+            orders.sort((a, b) => a.orderNo - b.orderNo).forEach(order => {
+                const row = [
+                    order.orderNo,
+                    `"${order.name}"`,
+                    `"${order.phone}"`,
+                    order.pickupCode || '',
+                    order.status,
+                    `"${formatTime(order.time)}"`
+                ];
+                csvData.push(row.join(','));
+            });
+
+            const csvBlob = new Blob(['\ufeff' + csvData.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            saveAs(csvBlob, `榕韵定制订单_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.csv`);
+            showToast('CSV导出成功');
+        }
+
         function exportAllOrders() {
             const orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             if (orders.length === 0) {
@@ -795,142 +757,73 @@
             }
             const data = JSON.stringify(orders, null, 2);
             const blob = new Blob([data], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.download = `orders_backup_${new Date().toISOString().split('T')[0]}.json`;
-            link.href = url;
-            link.click();
-            URL.revokeObjectURL(url);
-            showToast('JSON 文件已导出');
+            saveAs(blob, `榕韵定制订单_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.json`);
+            showToast('JSON导出成功');
         }
-        
-        function exportOrdersCSV() {
-            const orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-            if (orders.length === 0) {
-                showToast('暂无订单可导出');
-                return;
-            }
-            
-            const searchText = document.getElementById('searchInput').value.toLowerCase();
-            const statusFilter = document.getElementById('statusFilter').value;
-            
-            let filtered = orders;
-            if (searchText) {
-                filtered = filtered.filter(o => 
-                    o.name.toLowerCase().includes(searchText) || 
-                    o.phone.includes(searchText) ||
-                    (o.pickupCode && o.pickupCode.toString().includes(searchText))
-                );
-            }
-            if (statusFilter !== 'all') {
-                filtered = filtered.filter(o => o.status === statusFilter);
-            }
-            
-            filtered.sort((a, b) => b.orderNo - a.orderNo);
-            
-            const headers = ['订单号', '姓名', '手机号', '取件码', '状态', '时间', '设计图'];
-            const rows = filtered.map(o => [
-                o.orderNo,
-                `"${o.name}"`,
-                o.phone,
-                o.pickupCode || '',
-                o.status,
-                formatTime(o.time),
-                '图片'
-            ]);
-            
-            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.download = `orders_${new Date().toISOString().split('T')[0]}.csv`;
-            link.href = url;
-            link.click();
-            URL.revokeObjectURL(url);
-            showToast('CSV 文件已导出');
-        }
-        
+
         async function exportDesignsZip() {
             const orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             if (orders.length === 0) {
                 showToast('暂无订单可导出');
                 return;
             }
-            
-            const searchText = document.getElementById('searchInput').value.toLowerCase();
-            const statusFilter = document.getElementById('statusFilter').value;
-            
-            let filtered = orders;
-            if (searchText) {
-                filtered = filtered.filter(o => 
-                    o.name.toLowerCase().includes(searchText) || 
-                    o.phone.includes(searchText) ||
-                    (o.pickupCode && o.pickupCode.toString().includes(searchText))
-                );
+
+            const selected = getSelectedOrders();
+            let ordersToExport = orders;
+            if (selected.length > 0) {
+                ordersToExport = orders.filter(o => selected.includes(o.orderNo));
             }
-            if (statusFilter !== 'all') {
-                filtered = filtered.filter(o => o.status === statusFilter);
-            }
-            
-            if (filtered.length === 0) {
-                showToast('没有符合条件的订单');
+
+            const withDesign = ordersToExport.filter(o => o.design);
+            if (withDesign.length === 0) {
+                showToast('没有设计图可导出');
                 return;
             }
-            
-            showToast('正在打包设计图...');
-            
-            const zip = new JSZip();
-            
-            for (const order of filtered) {
-                try {
-                    const response = await fetch(order.design);
-                    const blob = await response.blob();
-                    const fileName = `order_${order.orderNo}_${order.name}.png`;
-                    zip.file(fileName, blob);
-                } catch (error) {
-                    console.error(`导出订单 ${order.orderNo} 失败:`, error);
+
+            showToast(`正在处理 ${withDesign.length} 张图片...`);
+
+            try {
+                const zip = new JSZip();
+                for (const order of withDesign) {
+                    try {
+                        const response = await fetch(order.design);
+                        const blob = await response.blob();
+                        zip.file(`order_${order.orderNo}_${order.name}.png`, blob);
+                    } catch (e) {
+                        console.error('下载图片失败:', order.orderNo);
+                    }
                 }
+
+                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                saveAs(zipBlob, `榕韵定制设计图_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.zip`);
+                showToast('设计图已打包下载');
+            } catch (err) {
+                console.error('压缩失败:', err);
+                showToast('打包失败，请重试');
             }
-            
-            const content = await zip.generateAsync({ type: 'blob' });
-            saveAs(content, `designs_${new Date().toISOString().split('T')[0]}.zip`);
-            showToast('设计图打包完成');
         }
-        
-        function showFullImage(src) {
+
+        function openImageModal(designUrl) {
             const modal = document.getElementById('imageModal');
-            const img = document.getElementById('modalImage');
-            img.src = src;
+            const image = document.getElementById('modalImage');
+            image.src = designUrl;
             modal.classList.add('active');
         }
-        
+
         function closeImageModal() {
-            document.getElementById('imageModal').classList.remove('active');
+            const modal = document.getElementById('imageModal');
+            modal.classList.remove('active');
         }
-        
-        document.getElementById('searchInput').addEventListener('input', debouncedRender);
-        document.getElementById('statusFilter').addEventListener('change', () => renderOrders());
-        
-        document.getElementById('imageModal').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('imageModal')) {
-                closeImageModal();
-            }
-        });
-        
+
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 closeImageModal();
             }
         });
-        
-        window.addEventListener('storage', (e) => {
-            if (e.key === STORAGE_KEY) {
-                loadOrders();
-                showToast('订单数据已更新');
-            }
-        });
-        
-        initLeanCloud();
+
+        document.getElementById('searchInput').addEventListener('input', debouncedRender);
+        document.getElementById('statusFilter').addEventListener('change', renderOrders);
+
         loadOrders();
     </script>
 </body>

@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>榕韵亲子定制 | 自助设计</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=Noto+Serif+SC:wght=400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght=300;400;500;600;700&family=Noto+Serif+SC:wght=400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/leancloud-storage@4.15.2/dist/av-min.js"></script>
     <script src="js/image-data.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1551,9 +1550,7 @@ function submitOrder() {
     const orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
     orders.push(orderData);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
-    
-    saveOrderToLeanCloud(orderData);
-    
+
     document.getElementById('pickupCodeText').innerText = pickupCode;
     document.getElementById('pickupCodeDisplay').style.display = 'block';
     
@@ -1748,8 +1745,6 @@ function initEventListeners() {
 }
 
 function init() {
-    initLeanCloud();
-    
     if (typeof fabric === 'undefined') {
         console.error('Fabric.js 未加载');
         alert('Fabric.js 未加载，请刷新页面');
@@ -1766,48 +1761,6 @@ function init() {
     }, 500);
     
     initEventListeners();
-}
-
-let leanCloudDB = null;
-const LC_APP_ID = 'YOUR_APP_ID';
-const LC_APP_KEY = 'YOUR_APP_KEY';
-const LC_SERVER_URL = 'YOUR_SERVER_URL';
-
-function initLeanCloud() {
-    try {
-        if (typeof AV !== 'undefined') {
-            AV.init({
-                appId: LC_APP_ID,
-                appKey: LC_APP_KEY,
-                serverURL: LC_SERVER_URL
-            });
-            leanCloudDB = true;
-            console.log('LeanCloud 初始化成功');
-        }
-    } catch (e) {
-        console.log('LeanCloud 未配置，仅使用本地存储');
-    }
-}
-
-async function saveOrderToLeanCloud(orderData) {
-    if (!leanCloudDB || LC_APP_ID === 'YOUR_APP_ID') {
-        console.log('LeanCloud 未配置，跳过云端保存');
-        return false;
-    }
-    
-    try {
-        const Order = AV.Object.extend('Order');
-        const order = new Order();
-        Object.keys(orderData).forEach(key => {
-            order.set(key, orderData[key]);
-        });
-        await order.save();
-        console.log('订单已保存到 LeanCloud');
-        return true;
-    } catch (e) {
-        console.log('LeanCloud 保存失败:', e);
-        return false;
-    }
 }
 
 window.addEventListener('DOMContentLoaded', init);
