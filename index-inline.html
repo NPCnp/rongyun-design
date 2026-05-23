@@ -154,10 +154,9 @@
 
     <div class="bottom-bar">
         <button class="bottom-btn secondary" id="undoBtn">↩️ 撤销</button>
-        <button class="bottom-btn secondary" id="redoBtn">↪️ 重做</button>
+        <button class="bottom-btn secondary" id="zoomInBtn">➕ 放大</button>
+        <button class="bottom-btn secondary" id="zoomOutBtn">➖ 缩小</button>
         <button class="bottom-btn secondary" id="deleteSelectedBtn" disabled>🗑️ 删除</button>
-        <button class="bottom-btn secondary" id="resetCanvasBtn">⟳ 重置</button>
-        <button class="bottom-btn secondary" id="sampleBtn">🎨 样例</button>
         <button class="bottom-btn primary" id="orderBtn">✅ 下单</button>
     </div>
 
@@ -536,10 +535,17 @@ function initFabric(keepContent = false, oldCanvasJson = null) {
     fabricCanvas.setWidth(newSize.width);
     
     fabric.Object.prototype.set({
-        hasControls: false,
-        hasBorders: true,
+        cornerSize: 28,
+        cornerTouchSize: 60,
+        cornerColor: '#B84A3C',
+        cornerStrokeColor: '#fff',
         borderColor: '#C9A87C',
-        borderScaleFactor: 3
+        borderScaleFactor: 3,
+        transparentCorners: false,
+        cornerStyle: 'rect',
+        hasBorders: true,
+        controlsAboveOverlay: true,
+        lockUniScaling: false
     });
     
     setCanvasBackground();
@@ -1061,6 +1067,36 @@ function undo() {
     }
 }
 
+function zoomIn() {
+    const obj = fabricCanvas.getActiveObject();
+    if (!obj) {
+        showToast('请先选中一个元素');
+        return;
+    }
+    let newScale = (obj.scaleX || 1) + 0.1;
+    newScale = Math.min(newScale, 3.0);
+    obj.set({ scaleX: newScale, scaleY: newScale });
+    fabricCanvas.renderAll();
+    saveHistory();
+    updateMockup();
+    vibrate();
+}
+
+function zoomOut() {
+    const obj = fabricCanvas.getActiveObject();
+    if (!obj) {
+        showToast('请先选中一个元素');
+        return;
+    }
+    let newScale = (obj.scaleX || 1) - 0.1;
+    newScale = Math.max(newScale, 0.3);
+    obj.set({ scaleX: newScale, scaleY: newScale });
+    fabricCanvas.renderAll();
+    saveHistory();
+    updateMockup();
+    vibrate();
+}
+
 function redo() {
     if (historyIndex < historyStack.length - 1) {
         historyIndex++;
@@ -1076,7 +1112,6 @@ function redo() {
 
 function updateUndoRedo() {
     document.getElementById('undoBtn').disabled = historyIndex <= 0;
-    document.getElementById('redoBtn').disabled = historyIndex >= historyStack.length - 1;
 }
 
 function buildCategoryTabs() {
@@ -1614,10 +1649,9 @@ function initPresetPhrases() {
 
 function initEventListeners() {
     document.getElementById('undoBtn').addEventListener('click', undo);
-    document.getElementById('redoBtn').addEventListener('click', redo);
+    document.getElementById('zoomInBtn').addEventListener('click', zoomIn);
+    document.getElementById('zoomOutBtn').addEventListener('click', zoomOut);
     document.getElementById('deleteSelectedBtn').addEventListener('click', deleteSelected);
-    document.getElementById('resetCanvasBtn').addEventListener('click', resetCanvas);
-    document.getElementById('sampleBtn').addEventListener('click', showSampleDesign);
     document.getElementById('orderBtn').addEventListener('click', openOrderModal);
     document.getElementById('addTextBtn').addEventListener('click', addUserText);
     
