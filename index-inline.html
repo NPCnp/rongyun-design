@@ -551,16 +551,15 @@ function initFabric(keepContent = false, oldCanvasJson = null) {
             scheduleUpdateMockup();
         });
     } else {
-        const centerX = newSize.width / 2, centerY = newSize.height / 2;
         const defaultText = currentMockup === 'postcard' ? '福州·三坊七巷' : '榕韵·帆布袋';
         const welcome = new fabric.Text(defaultText, {
-            left: centerX,
-            top: centerY,
-            fontSize: 26,
+            left: 20,
+            top: 20,
+            fontSize: 13,
             fontFamily: 'Noto Serif SC',
             fill: '#b45f2b',
-            originX: 'center',
-            originY: 'center'
+            originX: 'left',
+            originY: 'top'
         });
         fabricCanvas.add(welcome);
         fabricCanvas.renderAll();
