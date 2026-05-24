@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>榕韵亲子定制 | 自助设计（明信片/帆布袋）</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+    <script src="js/image-data.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Noto Sans SC', sans-serif; background: #FAF7F2; padding: 16px; }
+        .app-container { max-width: 1400px; margin: 0 auto; background: #fff; border-radius: 24px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #C9A87C, #E8D5C4); padding: 20px; text-align: center; }
+        .header h1 { font-family: 'Noto Serif SC', serif; font-size: 1.6rem; color: #fff; margin-bottom: 4px; }
+        .header p { color: rgba(255,255,255,0.9); font-size: 0.9rem; }
+        .shop-info { font-size: 0.8rem; color: rgba(255,255,255,0.8); margin-top: 8px; }
+        
+        .design-dashboard { display: flex; flex-wrap: wrap; gap: 16px; padding: 12px; }
+        .pattern-panel { flex: 1; min-width: 220px; max-width: 320px; background: #FAF7F2; border-radius: 16px; padding: 12px; }
+        .canvas-panel { flex: 1; min-width: 280px; max-width: 500px; background: #FAF7F2; border-radius: 16px; padding: 12px; }
+        .mockup-panel { flex: 1; min-width: 240px; max-width: 360px; background: #FAF7F2; border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+        
+        .category-tabs { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 16px; padding-bottom: 4px; scrollbar-width: thin; }
+        .cat-btn { flex-shrink: 0; padding: 8px 16px; background: #E8D5C4; border-radius: 30px; cursor: pointer; font-size: 0.85rem; transition: 0.2s; white-space: nowrap; }
+        .cat-btn.active, .cat-btn:hover { background: #B84A3C; color: white; }
+        .pattern-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 12px; max-height: 400px; overflow-y: auto; }
+        .pattern-item { background: white; border-radius: 12px; padding: 8px; text-align: center; cursor: pointer; transition: 0.1s; border: 1px solid #E5DED5; }
+        .pattern-item:active { transform: scale(0.96); }
+        .pattern-emoji { width: 60px; height: 60px; margin-bottom: 6px; object-fit: contain; background: #faf7f2; border-radius: 8px; }
+        .pattern-label { font-size: 0.7rem; color: #6B6B6B; }
+        
+        .canvas-container { position: relative; background: #f0e6d8; border-radius: 12px; padding: 16px; margin-bottom: 12px; touch-action: none; }
+        .canvas-wrapper { display: flex; justify-content: center; align-items: center; background: transparent; border-radius: 8px; overflow: hidden; position: relative; }
+        #designCanvas { display: block; max-width: 100%; max-height: 550px; height: auto; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); touch-action: none; cursor: grab; }
+        #designCanvas:active { cursor: grabbing; }
+        .canvas-controls { position: absolute; top: 12px; left: 12px; display: flex; gap: 8px; z-index: 10; }
+        .canvas-controls-right { position: absolute; top: 12px; right: 12px; display: flex; gap: 8px; z-index: 10; }
+        .control-btn { width: 44px; height: 44px; background: rgba(255,255,255,0.9); border: none; border-radius: 12px; font-size: 1.2rem; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; }
+        .control-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .action-buttons { display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap; }
+        .btn { padding: 12px 20px; border: none; border-radius: 40px; font-size: 0.9rem; cursor: pointer; background: #E8D5C4; color: #2C2C2C; min-width: 100px; }
+        .btn:hover { background: #C9A87C; color: white; }
+        .btn-primary { background: #B84A3C; color: white; }
+        
+        .mockup-header { display: flex; gap: 8px; margin-bottom: 12px; }
+        .mockup-type { flex: 1; text-align: center; padding: 6px 8px; background: white; border-radius: 30px; cursor: pointer; font-size: 0.85rem; }
+        .mockup-type.active { background: #4A6FA5; color: white; }
+        .mockup-canvas { background: #f0e6d8; border-radius: 12px; padding: 12px; text-align: center; cursor: pointer; }
+        #mockupImage { max-width: 100%; max-height: 180px; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+        
+        .text-tools { background: white; border-radius: 16px; padding: 12px; }
+        #userTextInput { width: 100%; padding: 12px; border: 1px solid #E5DED5; border-radius: 12px; font-size: 0.9rem; resize: vertical; margin-bottom: 12px; }
+        .preset-phrases { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .preset-phrase { padding: 6px 12px; background: #E8D5C4; border-radius: 30px; font-size: 0.8rem; cursor: pointer; }
+        .font-controls { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+        .font-controls select { flex: 1; padding: 10px; border: 1px solid #E5DED5; border-radius: 30px; }
+        .font-controls input { width: 44px; height: 44px; border: none; border-radius: 12px; cursor: pointer; }
+        #addTextBtn { width: 100%; }
+        .bg-select { margin-top: 12px; width: 100%; padding: 10px; border-radius: 30px; border: 1px solid #E5DED5; background: white; }
+        
+        .hint { font-size: 0.7rem; text-align: center; color: #888; margin-top: 12px; }
+        .footer { text-align: center; padding: 16px; background: #FAF7F2; border-top: 1px solid #E5DED5; }
+        .footer-link { color: #B84A3C; text-decoration: none; margin: 0 12px; }
+        
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 8px 20px; border-radius: 40px; font-size: 0.8rem; opacity: 0; transition: 0.2s; pointer-events: none; z-index: 2000; }
+        .toast.show { opacity: 1; }
+        
+        .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; border-radius: 24px; width: 90%; max-width: 400px; max-height: 90vh; overflow-y: auto; }
+        .modal-header { padding: 16px; border-bottom: 1px solid #E5DED5; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { color: #B84A3C; }
+        .modal-close { width: 32px; height: 32px; border-radius: 50%; background: #f0f0f0; border: none; cursor: pointer; }
+        .modal-body { padding: 16px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 500; }
+        .form-group input { width: 100%; padding: 12px; border: 1px solid #E5DED5; border-radius: 40px; font-size: 1rem; }
+        .form-group input.readonly { background: #f5f5f5; text-align: center; font-weight: bold; }
+        .order-preview-img { width: 100%; border-radius: 12px; margin-top: 8px; }
+        .modal-footer { padding: 16px; border-top: 1px solid #E5DED5; }
+        
+        .preview-modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 2000; align-items: center; justify-content: center; flex-direction: column; touch-action: none; }
+        .preview-modal.active { display: flex; }
+        .preview-close { position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+        .preview-controls { position: absolute; bottom: 30px; display: flex; gap: 12px; }
+        .preview-btn { padding: 12px 24px; background: rgba(255,255,255,0.9); border: none; border-radius: 30px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+        .preview-content { position: relative; width: 90vw; height: 80vh; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .preview-content img { max-width: 100%; max-height: 100%; object-fit: contain; transition: transform 0.1s ease-out; cursor: grab; box-shadow: 0 8px 30px rgba(0,0,0,0.3); border-radius: 8px; }
+        .preview-content img:active { cursor: grabbing; }
+        
+        @media (max-width: 800px) {
+            body { padding: 4px; }
+            .app-container { border-radius: 16px; }
+            .design-dashboard { flex-direction: column; gap: 12px; padding: 8px; }
+            .pattern-panel, .canvas-panel, .mockup-panel { 
+                min-width: auto; 
+                max-width: 100%; 
+                padding: 10px; 
+                border-radius: 12px;
+            }
+            .pattern-grid { grid-template-columns: repeat(4, 1fr); }
+            .header { padding: 12px; }
+            .header h1 { font-size: 1.2rem; }
+            .header p { font-size: 0.8rem; }
+            #designCanvas { max-width: 100%; height: auto; }
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="header">
+        <h1>🌿 榕韵亲子定制 · 三坊七巷店</h1>
+        <p>福州文旅 | 自助设计 · 即印即得</p>
+        <div class="shop-info">🕘 09:00-21:00 | 📍 三坊七巷主街</div>
+    </div>
+
+    <div class="design-dashboard">
+        <div class="pattern-panel">
+            <div class="category-tabs" id="categoryTabs"></div>
+            <div class="pattern-grid" id="patternGrid"></div>
+            <div class="hint">✨ 点击图案添加到画布 | 拖拽移动 | 长按删除</div>
+        </div>
+
+        <div class="canvas-panel">
+            <div class="canvas-container">
+                <div class="canvas-controls">
+                    <button class="control-btn" id="undoBtn" title="撤销 Ctrl+Z">↩️</button>
+                    <button class="control-btn" id="redoBtn" title="重做 Ctrl+Y">↪️</button>
+                </div>
+                <div class="canvas-controls-right">
+                    <button class="control-btn" id="resetCanvasBtn" title="重置">⟳</button>
+                    <button class="control-btn" id="deleteSelectedBtn" title="删除选中" disabled>🗑️</button>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="designCanvas" width="500" height="333"></canvas>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="btn" id="exportImageBtn">📸 导出图片</button>
+                <button class="btn btn-primary" id="orderBtn">✅ 下单</button>
+            </div>
+        </div>
+
+        <div class="mockup-panel">
+            <div>
+                <div class="mockup-header">
+                    <div class="mockup-type active" data-type="postcard">📬 明信片</div>
+                    <div class="mockup-type" data-type="tote">🛍️ 帆布袋</div>
+                </div>
+                <div class="mockup-canvas" id="mockupCanvas">
+                    <img id="mockupImage" alt="点击放大预览">
+                </div>
+                <div class="hint">点击图片放大预览 | 画板比例自动适配产品</div>
+            </div>
+
+            <div class="text-tools">
+                <textarea id="userTextInput" rows="2" placeholder="输入祝福语..."></textarea>
+                <div class="preset-phrases" id="presetPhrases"></div>
+                <div class="font-controls">
+                    <select id="fontFamilySelect">
+                        <option value="'Noto Serif SC', serif">思源宋体</option>
+                        <option value="'KaiTi', serif">楷体</option>
+                    </select>
+                    <select id="fontSizeSelect">
+                        <option value="24">小</option>
+                        <option value="32" selected>中</option>
+                        <option value="48">大</option>
+                    </select>
+                    <input type="color" id="textColorPicker" value="#4a2c14">
+                </div>
+                <button class="btn" id="addTextBtn">✍️ 添加文字</button>
+                <select id="bgColorSelect" class="bg-select">
+                    <option value="#ffffff">白色底色</option>
+                    <option value="#fff5e6">米黄宣纸</option>
+                    <option value="#e7f0e6">茉莉淡绿</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <span class="footer-link">🌸 原创福州文化 · 设计可打印至明信片/帆布袋</span>
+    </div>
+</div>
+
+<div class="preview-modal" id="previewModal">
+    <div class="preview-close" id="previewClose">✕</div>
+    <div class="preview-content" id="previewContent">
+        <img id="previewImage" src="" alt="预览">
+    </div>
+    <div class="preview-controls">
+        <button class="preview-btn" id="zoomOut">🔍 缩小</button>
+        <button class="preview-btn" id="zoomIn">🔍 放大</button>
+        <button class="preview-btn" id="switchMockup">切换模式</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="orderModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>📋 确认订单</h3>
+            <button class="modal-close" id="orderModalClose">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>订单号</label>
+                <input type="text" id="orderNoInput" readonly class="readonly">
+            </div>
+            <div class="form-group">
+                <label>姓名 <span style="color:red">*</span></label>
+                <input type="text" id="orderNameInput" placeholder="请输入您的姓名">
+            </div>
+            <div class="form-group">
+                <label>手机号 <span style="color:red">*</span></label>
+                <input type="tel" id="orderPhoneInput" placeholder="请输入手机号">
+            </div>
+            <img id="orderPreviewImage" class="order-preview-img" alt="设计预览">
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" id="submitOrderBtn">✅ 提交订单</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'diy_orders';
+const ORDER_NO_KEY = 'last_order_no';
+const themeData = {
+    "三坊七巷": ["🖼️ 爱心树", "🏛️ 林则徐纪念馆", "🪷 马鞍墙", "🏯 三坊七巷"],
+    "福州特色": ["🎪 福", "🏯 古厝飞檐", "🏮 红墙", "🎭 流苏", "🌼 茉莉花", "🌼 茉莉花1", "🌼 茉莉花2", "🍡 鱼丸", "🏮 州"],
+    "上下杭": ["⛵ 上下杭", "🌃 夜景"],
+    "西禅寺": ["🏯 西禅寺"],
+    "地标建筑": ["🏯 白塔", "🏯 乌塔", "🏛️ 五一广场", "🏯 镇海楼"]
+};
+const themeColor = { "三坊七巷":"#b35f2d","福州特色":"#8fbc8f","上下杭":"#5b7c5c","西禅寺":"#b8865b","地标建筑":"#4a6fa5" };
+let fabricCanvas, currentCategory = "三坊七巷", currentMockup = 'postcard';
+let historyStack = [], historyIndex = -1;
+
+// 画布尺寸：明信片 500x333 (3:2)，帆布袋 375x500 (竖长方形 3:4)
+const canvasSizes = {
+    postcard: { width: 500, height: 333 },
+    tote: { width: 375, height: 500 }
+};
+
+// 预览图尺寸（用于样机合成）
+const previewSizes = {
+    postcard: { width: 600, height: 400 },
+    tote: { width: 450, height: 600 }
+};
+
+// 生成明信片背景（使用canvas绘制，避免SVG filter引用问题）
+function generatePostcardBackground() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 600;
+    canvas.height = 400;
+    const ctx = canvas.getContext('2d');
+    
+    // 绘制外阴影
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.18)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetX = 3;
+    ctx.shadowOffsetY = 6;
+    
+    // 绘制卡片主体（米白色）
+    ctx.fillStyle = '#FFFDF5';
+    ctx.beginPath();
+    ctx.roundRect(10, 10, 580, 380, 10);
+    ctx.fill();
+    
+    // 关闭阴影
+    ctx.shadowColor = 'transparent';
+    
+    // 绘制内阴影效果
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+    ctx.beginPath();
+    ctx.roundRect(32, 32, 536, 336, 6);
+    ctx.fill();
+    
+    // 绘制纸张纹理
+    const textureCanvas = document.createElement('canvas');
+    textureCanvas.width = 4;
+    textureCanvas.height = 4;
+    const tCtx = textureCanvas.getContext('2d');
+    tCtx.fillStyle = 'rgba(180,170,160,0.15)';
+    tCtx.beginPath();
+    tCtx.arc(2, 2, 0.3, 0, Math.PI * 2);
+    tCtx.fill();
+    tCtx.fillStyle = 'rgba(200,190,180,0.1)';
+    tCtx.beginPath();
+    tCtx.arc(0, 0, 0.2, 0, Math.PI * 2);
+    tCtx.fill();
+    tCtx.fillStyle = 'rgba(190,180,170,0.08)';
+    tCtx.beginPath();
+    tCtx.arc(4, 0, 0.25, 0, Math.PI * 2);
+    tCtx.fill();
+    tCtx.beginPath();
+    tCtx.arc(0, 4, 0.25, 0, Math.PI * 2);
+    tCtx.fill();
+    tCtx.fillStyle = 'rgba(200,190,180,0.1)';
+    tCtx.beginPath();
+    tCtx.arc(4, 4, 0.2, 0, Math.PI * 2);
+    tCtx.fill();
+    
+    const pattern = ctx.createPattern(textureCanvas, 'repeat');
+    ctx.fillStyle = pattern;
+    ctx.beginPath();
+    ctx.roundRect(30, 30, 540, 340, 6);
+    ctx.fill();
+    
+    // 绘制细描边
+    ctx.strokeStyle = '#E0D8CF';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(30, 30, 540, 340, 6);
+    ctx.stroke();
+    
+    // 绘制邮票齿孔效果
+    ctx.fillStyle = 'rgba(160,140,120,0.25)';
+    for (let x = 30; x <= 570; x += 5) {
+        ctx.beginPath();
+        ctx.arc(x, 27.5, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x, 372.5, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    for (let y = 30; y <= 370; y += 5) {
+        ctx.beginPath();
+        ctx.arc(27.5, y, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(572.5, y, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    
+    return canvas;
+}
+
+// 生成帆布袋背景（使用canvas绘制）
+function generateToteBackground() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 450;
+    canvas.height = 600;
+    const ctx = canvas.getContext('2d');
+    
+    // 绘制背景
+    ctx.fillStyle = '#F5F5F5';
+    ctx.fillRect(0, 0, 450, 600);
+    
+    // 绘制袋身阴影
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetX = 4;
+    ctx.shadowOffsetY = 8;
+    
+    // 绘制袋身白色区域
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.roundRect(60, 70, 330, 470, 8);
+    ctx.fill();
+    
+    // 关闭阴影
+    ctx.shadowColor = 'transparent';
+    
+    // 绘制棉麻纹理
+    const textureCanvas = document.createElement('canvas');
+    textureCanvas.width = 3;
+    textureCanvas.height = 3;
+    const tCtx = textureCanvas.getContext('2d');
+    tCtx.fillStyle = 'rgba(180,170,160,0.12)';
+    tCtx.beginPath();
+    tCtx.arc(1.5, 1.5, 0.35, 0, Math.PI * 2);
+    tCtx.fill();
+    tCtx.fillStyle = 'rgba(200,190,180,0.08)';
+    tCtx.beginPath();
+    tCtx.arc(0, 0, 0.25, 0, Math.PI * 2);
+    tCtx.fill();
+    tCtx.fillStyle = 'rgba(190,180,170,0.06)';
+    tCtx.beginPath();
+    tCtx.arc(3, 0, 0.2, 0, Math.PI * 2);
+    tCtx.fill();
+    tCtx.beginPath();
+    tCtx.arc(0, 3, 0.2, 0, Math.PI * 2);
+    tCtx.fill();
+    tCtx.fillStyle = 'rgba(200,190,180,0.08)';
+    tCtx.beginPath();
+    tCtx.arc(3, 3, 0.25, 0, Math.PI * 2);
+    tCtx.fill();
+    
+    const pattern = ctx.createPattern(textureCanvas, 'repeat');
+    ctx.fillStyle = pattern;
+    ctx.beginPath();
+    ctx.roundRect(60, 70, 330, 470, 8);
+    ctx.fill();
+    
+    // 绘制袋身边框
+    ctx.strokeStyle = '#E0E0E0';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(60, 70, 330, 470, 8);
+    ctx.stroke();
+    
+    // 绘制提手（外层）
+    const gradient = ctx.createLinearGradient(140, 25, 140, 70);
+    gradient.addColorStop(0, '#E0E0E0');
+    gradient.addColorStop(0.5, '#F5F5F5');
+    gradient.addColorStop(1, '#D0D0D0');
+    ctx.strokeStyle = gradient;
+    ctx.lineWidth = 10;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(140, 70);
+    ctx.quadraticCurveTo(160, 25, 225, 25);
+    ctx.quadraticCurveTo(290, 25, 310, 70);
+    ctx.stroke();
+    
+    // 绘制提手（内层高光）
+    ctx.strokeStyle = '#F0F0F0';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(148, 70);
+    ctx.quadraticCurveTo(165, 30, 225, 30);
+    ctx.quadraticCurveTo(285, 30, 302, 70);
+    ctx.stroke();
+    
+    // 绘制内边框
+    ctx.strokeStyle = 'rgba(0,0,0,0.03)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(70, 80, 310, 450, 4);
+    ctx.stroke();
+    
+    return canvas;
+}
+
+// 预生成背景图
+const postcardBgCanvas = generatePostcardBackground();
+const toteBgCanvas = generateToteBackground();
+
+const mockupBg = {
+    postcard: postcardBgCanvas.toDataURL(),
+    tote: toteBgCanvas.toDataURL()
+};
+
+const presetPhrases = ['有福之州', '平安喜乐', '长乐未央', '岁岁平安', '家和万事兴', '福到家门'];
+
+function showToast(msg) { let t=document.getElementById('toast'); t.innerText=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1500); }
+
+function setCanvasBackground() {
+    if (currentMockup === 'postcard') {
+        fabricCanvas.backgroundColor = '#ffffff';
+    } else {
+        const textureCanvas = document.createElement('canvas');
+        textureCanvas.width = 50;
+        textureCanvas.height = 50;
+        const ctx = textureCanvas.getContext('2d');
+        ctx.fillStyle = '#F5F0E6';
+        ctx.fillRect(0, 0, 50, 50);
+        for (let i = 0; i < 800; i++) {
+            const x = Math.floor(Math.random() * 50);
+            const y = Math.floor(Math.random() * 50);
+            const intensity = Math.random();
+            if (intensity > 0.7) {
+                ctx.fillStyle = `rgba(180, 165, 140, ${0.08 + Math.random() * 0.12})`;
+            } else if (intensity < 0.3) {
+                ctx.fillStyle = `rgba(200, 190, 175, ${0.05 + Math.random() * 0.08})`;
+            } else {
+                ctx.fillStyle = `rgba(190, 180, 160, ${0.03 + Math.random() * 0.05})`;
+            }
+            ctx.fillRect(x, y, 1, 1);
+        }
+        for (let i = 0; i < 20; i++) {
+            ctx.strokeStyle = `rgba(170, 160, 140, ${0.03 + Math.random() * 0.04})`;
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(Math.random() * 50, Math.random() * 50);
+            ctx.lineTo(Math.random() * 50, Math.random() * 50);
+            ctx.stroke();
+        }
+        const pattern = new fabric.Pattern({
+            source: textureCanvas,
+            repeat: 'repeat'
+        });
+        fabricCanvas.backgroundColor = pattern;
+    }
+    fabricCanvas.renderAll();
+}
+
+function initFabric(keepContent = false, oldCanvasJson = null) {
+    const canvasEl = document.getElementById('designCanvas');
+    const newSize = canvasSizes[currentMockup];
+    canvasEl.width = newSize.width;
+    canvasEl.height = newSize.height;
+    if (fabricCanvas) fabricCanvas.dispose();
+    fabricCanvas = new fabric.Canvas('designCanvas', {
+        width: newSize.width,
+        height: newSize.height,
+        preserveObjectStacking: true,
+        selection: true,
+        fireRightClick: true,
+        enableRetinaScaling: true
+    });
+    setCanvasBackground();
+    
+    fabricCanvas.on('object:modified', () => { saveHistory(); updateMockup(); });
+    fabricCanvas.on('object:added', () => { updateMockup(); });
+    fabricCanvas.on('object:removed', () => { updateMockup(); });
+    fabricCanvas.on('selection:created', updateDeleteBtn);
+    fabricCanvas.on('selection:updated', updateDeleteBtn);
+    fabricCanvas.on('selection:cleared', updateDeleteBtn);
+    
+    if (keepContent && oldCanvasJson) {
+        fabricCanvas.loadFromJSON(oldCanvasJson, () => {
+            fabricCanvas.renderAll();
+            saveHistory();
+            updateMockup();
+        });
+    } else {
+        const defaultText = currentMockup === 'postcard' ? '福州·三坊七巷' : '榕韵·帆布袋';
+        const welcome = new fabric.Text(defaultText, { left: 20, top: 20, fontSize: 13, fontFamily:'Noto Serif SC', fill:'#b45f2b', originX:'left', originY:'top' });
+        fabricCanvas.add(welcome);
+        fabricCanvas.renderAll();
+        saveHistory();
+    }
+    updateDeleteBtn();
+    initCanvasTouchEvents();
+}
+
+function switchMockupMode(mode) {
+    if (mode === currentMockup) return;
+    const oldJson = JSON.stringify(fabricCanvas.toJSON());
+    const oldSize = canvasSizes[currentMockup];
+    currentMockup = mode;
+    const newSize = canvasSizes[currentMockup];
+    
+    // 解析JSON并调整对象
+    const parsedJson = JSON.parse(oldJson);
+    const objects = parsedJson.objects || [];
+    
+    objects.forEach(obj => {
+        // 保持字体大小不变
+        // 如果是文字对象，保持fontSize不变
+        if (obj.type === 'text' || obj.type === 'i-text') {
+            // 文字大小保持不变，不进行缩放
+        }
+        
+        // 调整位置：按画布尺寸比例缩放，保持相对画布左上角的位置比例
+        const oldLeft = obj.left || 0;
+        const oldTop = obj.top || 0;
+        
+        // 计算相对位置比例（0-1）
+        const relPosX = oldLeft / oldSize.width;
+        const relPosY = oldTop / oldSize.height;
+        
+        // 在新画布上设置相同的相对位置
+        obj.left = relPosX * newSize.width;
+        obj.top = relPosY * newSize.height;
+        
+        // 保持对象缩放不变
+        obj.scaleX = obj.scaleX || 1;
+        obj.scaleY = obj.scaleY || 1;
+    });
+    
+    const newJson = JSON.stringify(parsedJson);
+    initFabric(true, newJson);
+    
+    document.querySelectorAll('.mockup-type').forEach(t => t.classList.remove('active'));
+    document.querySelector(`.mockup-type[data-type="${mode}"]`).classList.add('active');
+    updateMockup();
+    showToast(`已切换到${mode === 'postcard' ? '明信片' : '帆布袋'}模式`);
+}
+
+function updateDeleteBtn() { document.getElementById('deleteSelectedBtn').disabled = !fabricCanvas.getActiveObject(); }
+function deleteSelected() { let active = fabricCanvas.getActiveObject(); if(active){ fabricCanvas.remove(active); fabricCanvas.renderAll(); saveHistory(); showToast('已删除'); } }
+function resetCanvas() { if(confirm('重置画布？')){ initFabric(false); showToast('已重置'); } }
+function saveHistory() { let json = JSON.stringify(fabricCanvas.toJSON()); historyStack = historyStack.slice(0, historyIndex+1); historyStack.push(json); historyIndex++; updateUndoRedo(); }
+function undo() { if(historyIndex>0){ historyIndex--; fabricCanvas.loadFromJSON(historyStack[historyIndex], ()=>fabricCanvas.renderAll()); updateMockup(); updateUndoRedo(); showToast('撤销'); } }
+function redo() { if(historyIndex<historyStack.length-1){ historyIndex++; fabricCanvas.loadFromJSON(historyStack[historyIndex], ()=>fabricCanvas.renderAll()); updateMockup(); updateUndoRedo(); showToast('重做'); } }
+function updateUndoRedo() { document.getElementById('undoBtn').disabled = historyIndex<=0; document.getElementById('redoBtn').disabled = historyIndex>=historyStack.length-1; }
+
+function buildCategoryTabs() {
+    const container = document.getElementById('categoryTabs'); container.innerHTML='';
+    Object.keys(themeData).forEach(cat=>{
+        let btn=document.createElement('div'); btn.className=`cat-btn ${cat===currentCategory?'active':''}`; btn.innerText=cat;
+        btn.onclick=()=>{ currentCategory=cat; document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderPatterns(); };
+        container.appendChild(btn);
+    });
+}
+function renderPatterns() {
+    const grid = document.getElementById('patternGrid'); grid.innerHTML='';
+    themeData[currentCategory].forEach(name=>{
+        let parts = name.split(' '); let emoji=parts[0]; let label=parts.slice(1).join(' ');
+        let div=document.createElement('div'); div.className='pattern-item';
+        
+        let iconContent = emoji;
+        if (imagePatterns && imagePatterns[name]) {
+            iconContent = `<img src="${imagePatterns[name]}" class="pattern-emoji" alt="${label}" />`;
+        }
+        
+        div.innerHTML=`<div>${iconContent}</div><div class="pattern-label">${label}</div>`;
+        div.onclick=()=> addPatternToCanvas(name, themeColor[currentCategory]);
+        grid.appendChild(div);
+    });
+}
+function addPatternToCanvas(name, color) {
+    const centerX = fabricCanvas.width/2, centerY = fabricCanvas.height/2;
+    
+    if (imagePatterns && imagePatterns[name]) {
+        const imgUrl = imagePatterns[name];
+        const img = new Image();
+        // 移除crossOrigin设置，避免本地文件跨域问题
+        // img.crossOrigin = "anonymous";
+        
+        img.onload = function() {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = img.width;
+            tempCanvas.height = img.height;
+            const ctx = tempCanvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            
+            const imageData = ctx.getImageData(0, 0, img.width, img.height);
+            const pixels = imageData.data;
+            
+            let minX = img.width, minY = img.height, maxX = 0, maxY = 0;
+            
+            for (let y = 0; y < img.height; y++) {
+                for (let x = 0; x < img.width; x++) {
+                    const i = (y * img.width + x) * 4;
+                    const r = pixels[i];
+                    const g = pixels[i + 1];
+                    const b = pixels[i + 2];
+                    const a = pixels[i + 3];
+                    
+                    const isNotWhite = !(r > 245 && g > 245 && b > 245);
+                    const isNotTransparent = a > 10;
+                    
+                    if (isNotWhite && isNotTransparent) {
+                        minX = Math.min(minX, x);
+                        minY = Math.min(minY, y);
+                        maxX = Math.max(maxX, x);
+                        maxY = Math.max(maxY, y);
+                    }
+                }
+            }
+            
+            if (maxX <= minX || maxY <= minY) {
+                minX = 0;
+                minY = 0;
+                maxX = img.width;
+                maxY = img.height;
+            }
+            
+            const croppedCanvas = document.createElement('canvas');
+            const croppedWidth = maxX - minX + 1;
+            const croppedHeight = maxY - minY + 1;
+            croppedCanvas.width = croppedWidth;
+            croppedCanvas.height = croppedHeight;
+            const croppedCtx = croppedCanvas.getContext('2d');
+            croppedCtx.drawImage(img, minX, minY, croppedWidth, croppedHeight, 0, 0, croppedWidth, croppedHeight);
+            
+            const fabricImg = new fabric.Image(croppedCanvas);
+            const maxWidth = Math.min(fabricCanvas.width * 0.7, 300);
+            const maxHeight = Math.min(fabricCanvas.height * 0.7, 300);
+            fabricImg.scaleToWidth(maxWidth);
+            if (fabricImg.height > maxHeight) {
+                fabricImg.scaleToHeight(maxHeight);
+            }
+            fabricImg.set({
+                left: centerX,
+                top: centerY,
+                originX: 'center',
+                originY: 'center'
+            });
+            fabricCanvas.add(fabricImg);
+            fabricCanvas.setActiveObject(fabricImg);
+            fabricCanvas.renderAll();
+            saveHistory();
+            showToast('已添加图片（已自动裁剪空白区域）');
+        };
+        
+        img.onerror = function(e) {
+            console.error('图片加载失败:', imgUrl, e);
+            addTextPattern(name, color);
+        };
+        
+        img.src = imgUrl;
+    } else {
+        addTextPattern(name, color);
+    }
+}
+
+function addTextPattern(name, color) {
+    const centerX = fabricCanvas.width/2, centerY = fabricCanvas.height/2;
+    let parts = name.split(' ');
+    let text = parts.slice(1).join(' ');
+    let obj = new fabric.Text(text, { left:centerX, top:centerY, fontSize:28, fontFamily:'Noto Serif SC', fill:color, originX:'center', originY:'center' });
+    fabricCanvas.add(obj); fabricCanvas.setActiveObject(obj); fabricCanvas.renderAll(); saveHistory(); showToast('已添加');
+}
+function addUserText(customText) {
+    let content = customText || document.getElementById('userTextInput').value.trim() || '福州·有福';
+    let fontFamily = document.getElementById('fontFamilySelect').value;
+    let fontSize = parseInt(document.getElementById('fontSizeSelect').value);
+    let color = document.getElementById('textColorPicker').value;
+    const centerX = fabricCanvas.width/2, centerY = fabricCanvas.height/2;
+    let obj = new fabric.Text(content, { left:centerX, top:centerY, fontSize:fontSize, fontFamily:fontFamily, fill:color, originX:'center', originY:'center' });
+    fabricCanvas.add(obj); fabricCanvas.setActiveObject(obj); fabricCanvas.renderAll(); saveHistory(); showToast('已添加文字');
+    if(!customText) document.getElementById('userTextInput').value = content;
+}
+
+function updateMockup() {
+    const mockImg = document.getElementById('mockupImage');
+    if (!mockImg) return;
+    // 使用更高分辨率导出（multiplier: 6），确保文字清晰
+    const designURL = fabricCanvas.toDataURL({ format: 'png', multiplier: 6 });
+    const w = previewSizes[currentMockup].width;
+    const h = previewSizes[currentMockup].height;
+    const finalCanvas = document.createElement('canvas');
+    // 使用2倍尺寸绘制，然后缩小显示，提高清晰度
+    finalCanvas.width = w * 2;
+    finalCanvas.height = h * 2;
+    const ctx = finalCanvas.getContext('2d');
+    // 设置高清渲染
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    const bgImg = new Image();
+    bgImg.crossOrigin = "Anonymous";
+    bgImg.onload = () => {
+        ctx.drawImage(bgImg, 0, 0, w * 2, h * 2);
+        const designImg = new Image();
+        designImg.crossOrigin = "Anonymous";
+        designImg.onload = () => {
+            let dw, dh, dx, dy;
+            if (currentMockup === 'postcard') {
+                // 明信片模式：设计图居中显示，四周留白边（上下左右各30px）
+                const padding = 60;
+                const scale = Math.min((w - padding) / (designImg.width / 6), (h - padding) / (designImg.height / 6));
+                dw = (designImg.width / 6) * scale * 2;
+                dh = (designImg.height / 6) * scale * 2;
+                dx = (w * 2 - dw) / 2;
+                dy = (h * 2 - dh) / 2;
+            } else {
+                // 帆布袋模式：设计图贴合袋身白色矩形区域（x:60, y:70, 宽:330, 高:470）
+                const bagBody = { x: 60, y: 70, w: 330, h: 470 };
+                // 使用袋子整个白色区域，不留边距
+                const maxWidth = bagBody.w * 0.95;
+                const maxHeight = bagBody.h * 0.95;
+                const scale = Math.min(maxWidth / (designImg.width / 6), maxHeight / (designImg.height / 6));
+                dw = (designImg.width / 6) * scale * 2;
+                dh = (designImg.height / 6) * scale * 2;
+                dx = bagBody.x * 2 + (bagBody.w * 2 - dw) / 2;
+                dy = bagBody.y * 2 + (bagBody.h * 2 - dh) / 2;
+            }
+            ctx.drawImage(designImg, 0, 0, designImg.width, designImg.height, dx, dy, dw, dh);
+            // 使用高质量压缩
+            mockImg.src = finalCanvas.toDataURL('image/png', 1.0);
+            updatePreviewModal();
+        };
+        designImg.onerror = () => { console.warn('设计图加载失败'); mockImg.src = finalCanvas.toDataURL(); };
+        designImg.src = designURL;
+    };
+    bgImg.onerror = () => { console.warn('背景图加载失败'); };
+    bgImg.src = mockupBg[currentMockup];
+}
+
+function exportImage() {
+    let url = fabricCanvas.toDataURL({ format:'png', multiplier:3 });
+    let a = document.createElement('a'); a.download = `设计_${Date.now()}.png`; a.href = url; a.click(); showToast('已导出');
+}
+function openOrderModal() {
+    let orderNo = (parseInt(localStorage.getItem(ORDER_NO_KEY)||'0')+1);
+    document.getElementById('orderNoInput').value = orderNo;
+    document.getElementById('orderNameInput').value = '';
+    document.getElementById('orderPhoneInput').value = '';
+    document.getElementById('orderPreviewImage').src = fabricCanvas.toDataURL({ format:'png', multiplier:2 });
+    document.getElementById('orderModal').classList.add('active');
+}
+function closeOrderModal() { document.getElementById('orderModal').classList.remove('active'); }
+function submitOrder() {
+    let orderNo = (parseInt(localStorage.getItem(ORDER_NO_KEY)||'0')+1);
+    let name = document.getElementById('orderNameInput').value.trim();
+    let phone = document.getElementById('orderPhoneInput').value.trim();
+    if(!name){ showToast('请输入姓名'); return; }
+    if(!phone || !/^1[3-9]\d{9}$/.test(phone)){ showToast('请输入正确的手机号'); return; }
+    localStorage.setItem(ORDER_NO_KEY, orderNo);
+    let design = fabricCanvas.toDataURL({ format:'png', multiplier:2 });
+    let pickupCode = Math.floor(100000 + Math.random() * 900000);
+    let orders = JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');
+    orders.push({ 
+        orderNo, 
+        name, 
+        phone, 
+        design, 
+        time: new Date().toLocaleString(), 
+        timestamp: new Date().toISOString(), 
+        status: '待制作',
+        pickupCode 
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+    closeOrderModal();
+    showToast(`订单已提交！订单号：${orderNo}，取件码：${pickupCode}，请截图保存，凭取件码到前台制作`);
+}
+
+function openAdminPage() {
+    let w = window.open();
+    let orders = JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');
+    let pending = orders.filter(o=>o.status==='待制作').length;
+    let completed = orders.length - pending;
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>订单管理后台</title><style>
+        *{margin:0;padding:0;box-sizing:border-box;} body{background:#faf7f2;font-family:sans-serif;padding:20px;} .container{max-width:1200px;margin:0 auto;}
+        .stats{display:flex;gap:20px;margin-bottom:24px;} .stat{background:white;padding:20px;border-radius:16px;flex:1;text-align:center;}
+        .controls{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;} .search-box{flex:1;} .search-box input{width:100%;padding:12px;border-radius:40px;border:1px solid #ccc;}
+        .btn{padding:10px 20px;border-radius:40px;border:none;cursor:pointer;background:#e8d5c4;font-size:0.9rem;} .btn-primary{background:#b84a3c;color:white;}
+        .orders-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px;} .order-card{background:white;border-radius:16px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.1);}
+        .order-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;} .order-id{font-size:1.1rem;font-weight:bold;color:#B84A3C;}
+        .order-status{padding:4px 12px;border-radius:20px;font-size:0.8rem;}
+        .status-pending{background:#fff3e0;color:#e65100;} .status-completed{background:#e8f5e9;color:#2e7d32;}
+        .pickup-code{background:#B84A3C;color:white;padding:8px 16px;border-radius:12px;text-align:center;font-size:1.2rem;font-weight:bold;letter-spacing:2px;margin:8px 0;}
+        .copy-btn{background:#4A6FA5;color:white;border:none;padding:4px 12px;border-radius:20px;font-size:0.75rem;cursor:pointer;margin-left:8px;}
+        .order-info{margin:8px 0;font-size:0.9rem;} .order-info strong{color:#666;}
+        .order-design{width:100%;height:160px;background:#f0e6d8;border-radius:12px;margin:12px 0;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;}
+        .order-design img{max-width:100%;max-height:100%;object-fit:contain;} .order-actions{display:flex;gap:8px;margin-top:12px;} .order-actions button{flex:1;}
+        .preview-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);justify-content:center;align-items:center;z-index:1000;}
+        .preview-modal.active{display:flex;} .preview-modal img{max-width:90%;max-height:90vh;} .preview-close{position:absolute;top:20px;right:20px;background:white;border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+        @media(max-width:600px){.orders-grid{grid-template-columns:1fr;}}
+    </style></head><body><div class="container">
+    <h1>📋 订单管理中心</h1><div class="stats"><div class="stat"><h3>全部订单</h3><p style="font-size:2rem;font-weight:bold;color:#B84A3C">${orders.length}</p></div><div class="stat"><h3>待制作</h3><p style="font-size:2rem;font-weight:bold;color:#e65100">${pending}</p></div><div class="stat"><h3>已完成</h3><p style="font-size:2rem;font-weight:bold;color:#2e7d32">${completed}</p></div></div>
+    <div class="controls"><div class="search-box"><input type="text" id="search" placeholder="搜索姓名、手机号或取件码"></div><select id="statusFilter" style="padding:12px;border-radius:40px;border:1px solid #ccc;"><option value="all">全部状态</option><option value="待制作">待制作</option><option value="已制作">已制作</option></select><button class="btn btn-primary" onclick="exportOrders()">📎 导出全部订单</button></div>
+    <div id="ordersGrid" class="orders-grid"></div></div>
+    <div id="previewModal" class="preview-modal"><div class="preview-close" onclick="closePreview()">✕</div><img id="previewImg" src=""></div>
+    <script>
+        const STORAGE_KEY='diy_orders';
+        function loadOrders(){return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}
+        function saveOrders(orders){localStorage.setItem(STORAGE_KEY,JSON.stringify(orders));}
+        function render(){
+            let orders=loadOrders(); 
+            let search=document.getElementById('search').value.toLowerCase(); 
+            let status=document.getElementById('statusFilter').value;
+            let filtered=orders.filter(o=>(
+                o.name.toLowerCase().includes(search) || 
+                o.phone.includes(search) || 
+                (o.pickupCode && o.pickupCode.toString().includes(search))
+            ) && (status==='all'||o.status===status));
+            let grid=document.getElementById('ordersGrid');
+            if(filtered.length===0){grid.innerHTML='<div style="text-align:center;padding:60px;color:#999">暂无订单</div>';return;}
+            grid.innerHTML=filtered.map(o=>\`
+                <div class="order-card">
+                    <div class="order-header">
+                        <span class="order-id">#\${o.orderNo}</span>
+                        <span class="order-status status-\${o.status==='待制作'?'pending':'completed'}">\${o.status}</span>
+                    </div>
+                    <div class="pickup-code">取件码：\${o.pickupCode || '无'} <button class="copy-btn" onclick="copyPickupCode('\${o.pickupCode}')">📋 复制</button></div>
+                    <div class="order-info"><strong>姓名：</strong>\${o.name}</div>
+                    <div class="order-info"><strong>手机：</strong>\${o.phone}</div>
+                    <div class="order-info"><strong>时间：</strong>\${o.time}</div>
+                    <div class="order-design" onclick="showImage('\${o.design}')"><img src="\${o.design}"></div>
+                    <div class="order-actions">
+                        \${o.status==='待制作'? '<button class="btn btn-primary" onclick="markComplete(\${o.orderNo})">✅ 标记已制作</button>' : '<button class="btn" onclick="markPending(\${o.orderNo})">🔄 恢复待制作</button>'}
+                        <button class="btn" onclick="printDesign('\${o.design}')">🖨️ 打印设计</button>
+                    </div>
+                </div>
+            \`).join('');
+        }
+        function copyPickupCode(code){navigator.clipboard.writeText(code).then(()=>alert('取件码 '+code+' 已复制'));}
+        function markComplete(no){let orders=loadOrders(); let o=orders.find(o=>o.orderNo===no); if(o){o.status='已制作'; saveOrders(orders); render();}}
+        function markPending(no){let orders=loadOrders(); let o=orders.find(o=>o.orderNo===no); if(o){o.status='待制作'; saveOrders(orders); render();}}
+        function showImage(src){document.getElementById('previewImg').src=src; document.getElementById('previewModal').classList.add('active');}
+        function closePreview(){document.getElementById('previewModal').classList.remove('active');}
+        function printDesign(src){let w=window.open(); w.document.write('<img src="'+src+'" style="width:100%" onload="window.print();window.close()">'); w.document.close();}
+        function exportOrders(){let orders=loadOrders(); let blob=new Blob([JSON.stringify(orders,null,2)],{type:'application/json'}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='orders_'+new Date().toISOString().slice(0,10)+'.json'; a.click();}
+        document.getElementById('search').addEventListener('input',render); document.getElementById('statusFilter').addEventListener('change',render);
+        render();
+    <\/script></body></html>`);
+    w.document.close();
+}
+
+let currentZoom = 1;
+let currentOffsetX = 0;
+let currentOffsetY = 0;
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+
+function updatePreviewModal() {
+    const previewImg = document.getElementById('previewImage');
+    const mockImg = document.getElementById('mockupImage');
+    if (previewImg && mockImg && mockImg.src) {
+        previewImg.src = mockImg.src;
+    }
+}
+
+function initPreview() {
+    let modal = document.getElementById('previewModal');
+    const previewContent = document.getElementById('previewContent');
+    const previewImg = document.getElementById('previewImage');
+    
+    document.getElementById('mockupCanvas').onclick = () => {
+        const mockImg = document.getElementById('mockupImage');
+        if (mockImg && mockImg.src) {
+            previewImg.src = mockImg.src;
+        } else {
+            const highResURL = fabricCanvas.toDataURL({ format: 'png', multiplier: 4 });
+            previewImg.src = highResURL;
+        }
+        modal.classList.add('active');
+        resetZoom();
+    };
+    
+    document.getElementById('previewClose').onclick = () => {
+        modal.classList.remove('active');
+    };
+    
+    document.getElementById('zoomIn').onclick = () => { zoomIn(); };
+    document.getElementById('zoomOut').onclick = () => { zoomOut(); };
+    
+    document.getElementById('switchMockup').onclick = () => {
+        let newMode = currentMockup === 'postcard' ? 'tote' : 'postcard';
+        switchMockupMode(newMode);
+        setTimeout(() => { 
+            const mockImg = document.getElementById('mockupImage');
+            if (mockImg && mockImg.src) {
+                previewImg.src = mockImg.src;
+            } else {
+                const highResURL = fabricCanvas.toDataURL({ format: 'png', multiplier: 4 });
+                previewImg.src = highResURL;
+            }
+            currentZoom = 1;
+            currentOffsetX = 0;
+            currentOffsetY = 0;
+            updateTransform();
+        }, 300);
+    };
+    
+    previewContent.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const rect = previewContent.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        zoomAtPoint(currentZoom + delta, mouseX, mouseY);
+    });
+    
+    previewContent.addEventListener('mousedown', (e) => {
+        if (e.target !== previewImg) return;
+        isDragging = true;
+        dragStartX = e.clientX - currentOffsetX;
+        dragStartY = e.clientY - currentOffsetY;
+        previewImg.style.cursor = 'grabbing';
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        currentOffsetX = e.clientX - dragStartX;
+        currentOffsetY = e.clientY - dragStartY;
+        updateTransform();
+    });
+    
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+        previewImg.style.cursor = 'grab';
+    });
+    
+    let touchStartDistance = 0;
+    let touchStartZoom = 1;
+    
+    previewContent.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (e.touches.length === 2) {
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            touchStartDistance = getDistance(touch1, touch2);
+            touchStartZoom = currentZoom;
+        } else if (e.touches.length === 1) {
+            isDragging = true;
+            dragStartX = e.touches[0].clientX - currentOffsetX;
+            dragStartY = e.touches[0].clientY - currentOffsetY;
+        }
+    });
+    
+    previewContent.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (e.touches.length === 2) {
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            const currentDistance = getDistance(touch1, touch2);
+            const scale = currentDistance / touchStartDistance;
+            const newZoom = Math.max(0.5, Math.min(4, touchStartZoom * scale));
+            const rect = previewContent.getBoundingClientRect();
+            const centerX = (touch1.clientX + touch2.clientX) / 2 - rect.left;
+            const centerY = (touch1.clientY + touch2.clientY) / 2 - rect.top;
+            const zoomDiff = newZoom / currentZoom;
+            currentOffsetX = centerX - (centerX - currentOffsetX) * zoomDiff;
+            currentOffsetY = centerY - (centerY - currentOffsetY) * zoomDiff;
+            currentZoom = newZoom;
+            updateTransform();
+        } else if (e.touches.length === 1 && isDragging) {
+            currentOffsetX = e.touches[0].clientX - dragStartX;
+            currentOffsetY = e.touches[0].clientY - dragStartY;
+            updateTransform();
+        }
+    });
+    
+    previewContent.addEventListener('touchend', () => {
+        isDragging = false;
+        touchStartDistance = 0;
+    });
+    
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.remove('active');
+        }
+    });
+}
+
+function getDistance(touch1, touch2) {
+    const dx = touch2.clientX - touch1.clientX;
+    const dy = touch2.clientY - touch1.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+function zoomIn() {
+    zoomAtPoint(currentZoom + 0.2, null, null);
+}
+
+function zoomOut() {
+    zoomAtPoint(currentZoom - 0.2, null, null);
+}
+
+function zoomAtPoint(newZoom, centerX, centerY) {
+    newZoom = Math.max(0.5, Math.min(4, newZoom));
+    if (centerX !== null && centerY !== null) {
+        const zoomDiff = newZoom / currentZoom;
+        currentOffsetX = centerX - (centerX - currentOffsetX) * zoomDiff;
+        currentOffsetY = centerY - (centerY - currentOffsetY) * zoomDiff;
+    }
+    currentZoom = newZoom;
+    updateTransform();
+}
+
+function resetZoom() {
+    currentZoom = 1;
+    currentOffsetX = 0;
+    currentOffsetY = 0;
+    updateTransform();
+}
+
+function updateTransform() {
+    const previewImg = document.getElementById('previewImage');
+    previewImg.style.transform = `translate(${currentOffsetX}px, ${currentOffsetY}px) scale(${currentZoom})`;
+}
+
+function initEventListeners() {
+    document.querySelectorAll('.mockup-type').forEach(t => t.addEventListener('click', (e) => {
+        let mode = e.target.dataset.type;
+        if (mode !== currentMockup) switchMockupMode(mode);
+    }));
+    document.getElementById('undoBtn').onclick = undo;
+    document.getElementById('redoBtn').onclick = redo;
+    document.getElementById('resetCanvasBtn').onclick = resetCanvas;
+    document.getElementById('deleteSelectedBtn').onclick = deleteSelected;
+    document.getElementById('exportImageBtn').onclick = exportImage;
+    document.getElementById('orderBtn').onclick = openOrderModal;
+    document.getElementById('orderModalClose').onclick = closeOrderModal;
+    document.getElementById('submitOrderBtn').onclick = submitOrder;
+    document.getElementById('addTextBtn').onclick = () => addUserText();
+    document.getElementById('bgColorSelect').onchange = (e) => {
+        if (currentMockup === 'postcard') {
+            fabricCanvas.backgroundColor = e.target.value;
+            fabricCanvas.renderAll();
+            saveHistory();
+        } else {
+            showToast('帆布袋模式下底色固定为棉麻纹理');
+        }
+    };
+    document.addEventListener('keydown', (e) => {
+        if(e.key === 'Delete' && fabricCanvas.getActiveObject()) deleteSelected();
+        if(e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
+        if(e.ctrlKey && e.key === 'y') { e.preventDefault(); redo(); }
+        if(e.key === 'Escape') { closeOrderModal(); document.getElementById('previewModal').classList.remove('active'); }
+    });
+    initPreview();
+}
+
+function initCanvasTouchEvents() {
+    const canvasEl = document.getElementById('designCanvas');
+    let touchStartDistance = 0;
+    let touchStartZoom = 1;
+    let isLongPress = false;
+    let longPressTimer = null;
+    let lastTouchEnd = 0;
+    
+    canvasEl.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        
+        if (e.touches.length === 2) {
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            touchStartDistance = getTouchDistance(touch1, touch2);
+            
+            const activeObj = fabricCanvas.getActiveObject();
+            touchStartZoom = activeObj ? (activeObj.scaleX || 1) : 1;
+        } else if (e.touches.length === 1) {
+            const touch = e.touches[0];
+            const clickTime = new Date().getTime();
+            
+            if (clickTime - lastTouchEnd < 300) {
+                e.preventDefault();
+                lastTouchEnd = 0;
+                return;
+            }
+            lastTouchEnd = clickTime;
+            
+            const target = fabricCanvas.findTarget(touch);
+            
+            if (target && !fabricCanvas.getActiveObject()) {
+                fabricCanvas.setActiveObject(target);
+            }
+            
+            isLongPress = false;
+            longPressTimer = setTimeout(() => {
+                isLongPress = true;
+                showToast('长按选中对象可拖拽移动');
+            }, 500);
+        }
+    }, { passive: false });
+    
+    canvasEl.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        
+        if (longPressTimer && !isLongPress) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+        
+        if (e.touches.length === 2) {
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            const currentDistance = getTouchDistance(touch1, touch2);
+            const scale = currentDistance / touchStartDistance;
+            const newZoom = Math.max(0.5, Math.min(3, touchStartZoom * scale));
+            
+            const activeObj = fabricCanvas.getActiveObject();
+            if (activeObj) {
+                activeObj.set({
+                    scaleX: newZoom,
+                    scaleY: newZoom
+                });
+                fabricCanvas.renderAll();
+                saveHistory();
+                updateMockup();
+            }
+        } else if (e.touches.length === 1 && isLongPress) {
+            const touch = e.touches[0];
+            const point = fabricCanvas.getPointer(touch);
+            
+            const activeObj = fabricCanvas.getActiveObject();
+            if (activeObj) {
+                activeObj.set({
+                    left: point.x,
+                    top: point.y
+                });
+                fabricCanvas.renderAll();
+                saveHistory();
+                updateMockup();
+            }
+        }
+    }, { passive: false });
+    
+    canvasEl.addEventListener('touchend', () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+        isLongPress = false;
+        touchStartDistance = 0;
+    });
+    
+    canvasEl.addEventListener('touchcancel', () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+        isLongPress = false;
+        touchStartDistance = 0;
+    });
+}
+
+function getTouchDistance(touch1, touch2) {
+    const dx = touch2.clientX - touch1.clientX;
+    const dy = touch2.clientY - touch1.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initFabric(false);
+    buildCategoryTabs();
+    renderPatterns();
+    initEventListeners();
+    updateMockup();
+    let container = document.getElementById('presetPhrases');
+    presetPhrases.forEach(p => { let span = document.createElement('span'); span.className = 'preset-phrase'; span.innerText = p; span.onclick = () => addUserText(p); container.appendChild(span); });
+});
+</script>
+</body>
+</html>

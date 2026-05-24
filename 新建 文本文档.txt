@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>榕韵亲子定制 | 手机自助设计</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background: #FAF7F2;
+            font-family: 'Noto Sans SC', sans-serif;
+            padding-bottom: 80px;
+        }
+        .header {
+            background: linear-gradient(135deg, #C9A87C, #E8D5C4);
+            padding: 12px 16px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .header h1 {
+            font-size: 1.3rem;
+            color: #fff;
+        }
+        .header p {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.9);
+        }
+        .shop-info {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.8);
+        }
+
+        /* 图案库横向滚动 */
+        .pattern-section {
+            background: white;
+            margin: 8px 12px;
+            border-radius: 20px;
+            padding: 10px 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .category-tabs {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+            scrollbar-width: none;
+        }
+        .category-tabs::-webkit-scrollbar { display: none; }
+        .cat-btn {
+            flex-shrink: 0;
+            padding: 6px 16px;
+            background: #E8D5C4;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .cat-btn.active {
+            background: #B84A3C;
+            color: white;
+        }
+        .pattern-scroll {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .pattern-scroll::-webkit-scrollbar { display: none; }
+        .pattern-item {
+            flex-shrink: 0;
+            width: 70px;
+            background: #FAF7F2;
+            border-radius: 14px;
+            padding: 6px;
+            text-align: center;
+            border: 1px solid #E5DED5;
+            cursor: pointer;
+        }
+        .pattern-emoji {
+            font-size: 1.8rem;
+            margin-bottom: 4px;
+        }
+        .pattern-label {
+            font-size: 0.6rem;
+            color: #6B6B6B;
+        }
+
+        /* 画布区域 - 最大化有效设计区 */
+        .canvas-section {
+            margin: 8px 12px;
+            background: #f0e6d8;
+            border-radius: 20px;
+            padding: 8px;   /* 仅留少量内边距 */
+            display: flex;
+            justify-content: center;
+        }
+        .canvas-wrapper {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+        #designCanvas {
+            width: 100%;
+            height: auto;
+            display: block;
+            background: white;
+        }
+
+        /* 文字工具区 */
+        .text-tools {
+            background: white;
+            margin: 8px 12px;
+            border-radius: 20px;
+            padding: 12px;
+        }
+        #userTextInput {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #E5DED5;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+        }
+        .preset-phrases {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .preset-phrase {
+            background: #E8D5C4;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        .font-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .font-controls select, .font-controls input {
+            flex: 1;
+            padding: 8px;
+            border-radius: 30px;
+            border: 1px solid #E5DED5;
+            font-size: 0.8rem;
+        }
+        #addTextBtn {
+            width: 100%;
+            padding: 10px;
+            background: #C9A87C;
+            border: none;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* 底部固定栏 */
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.96);
+            backdrop-filter: blur(10px);
+            display: flex;
+            padding: 8px 12px;
+            gap: 6px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 100;
+            padding-bottom: calc(8px + env(safe-area-inset-bottom));
+        }
+        .bottom-btn {
+            flex: 1;
+            padding: 8px 0;
+            border: none;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            background: #E8D5C4;
+            color: #2C2C2C;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .bottom-btn.primary {
+            background: #B84A3C;
+            color: white;
+        }
+
+        /* 悬浮预览 */
+        .preview-thumb {
+            position: fixed;
+            bottom: 90px;
+            right: 12px;
+            width: 55px;
+            height: 55px;
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            overflow: hidden;
+            cursor: pointer;
+            z-index: 50;
+        }
+        .preview-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .mode-switch {
+            position: fixed;
+            bottom: 90px;
+            left: 12px;
+            background: white;
+            border-radius: 30px;
+            display: flex;
+            gap: 4px;
+            padding: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 50;
+        }
+        .mode-btn {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            background: #E8D5C4;
+            cursor: pointer;
+        }
+        .mode-btn.active {
+            background: #4A6FA5;
+            color: white;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            z-index: 2000;
+            opacity: 0;
+            transition: 0.2s;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 400px;
+            padding: 20px;
+        }
+        .preview-modal .modal-content {
+            max-width: 95%;
+            padding: 0;
+            background: transparent;
+        }
+        .preview-modal img {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: 16px;
+        }
+        .close-preview {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🌿 榕韵亲子定制</h1>
+    <p>福州文旅 · 自助设计</p>
+    <div class="shop-info">📍 三坊七巷主街 | 🕘 09:00-21:00</div>
+</div>
+
+<div class="pattern-section">
+    <div class="category-tabs" id="categoryTabs"></div>
+    <div class="pattern-scroll" id="patternGrid"></div>
+</div>
+
+<div class="canvas-section">
+    <div class="canvas-wrapper">
+        <canvas id="designCanvas" width="500" height="333"></canvas>
+    </div>
+</div>
+
+<div class="text-tools">
+    <textarea id="userTextInput" placeholder="输入祝福语..."></textarea>
+    <div class="preset-phrases" id="presetPhrases"></div>
+    <div class="font-controls">
+        <select id="fontFamilySelect">
+            <option value="'Noto Serif SC', serif">思源宋体</option>
+            <option value="'KaiTi', serif">楷体</option>
+        </select>
+        <select id="fontSizeSelect">
+            <option value="24">小</option>
+            <option value="32" selected>中</option>
+            <option value="48">大</option>
+        </select>
+        <input type="color" id="textColorPicker" value="#4a2c14">
+    </div>
+    <button id="addTextBtn">✍️ 添加文字</button>
+</div>
+
+<div class="bottom-bar">
+    <button class="bottom-btn" id="undoBtn">↩️ 撤销</button>
+    <button class="bottom-btn" id="zoomInBtn">➕ 放大</button>
+    <button class="bottom-btn" id="zoomOutBtn">➖ 缩小</button>
+    <button class="bottom-btn" id="deleteBtn">🗑️ 删除</button>
+    <button class="bottom-btn primary" id="orderBtn">✅ 下单</button>
+</div>
+
+<div class="preview-thumb" id="previewThumb">
+    <img id="previewThumbImg" alt="预览">
+</div>
+<div class="mode-switch">
+    <button class="mode-btn active" data-mode="postcard">📬 明信片</button>
+    <button class="mode-btn" data-mode="tote">🛍️ 帆布袋</button>
+</div>
+
+<div class="modal" id="previewModal">
+    <div class="close-preview" id="closePreviewBtn">✕</div>
+    <div class="modal-content">
+        <img id="previewFullImg" src="" alt="设计预览">
+    </div>
+</div>
+
+<div class="modal" id="orderModal">
+    <div class="modal-content">
+        <h3 style="color:#B84A3C; margin-bottom:16px;">📋 确认订单</h3>
+        <div style="margin-bottom:12px;">
+            <label>订单号</label>
+            <input type="text" id="orderNo" readonly style="background:#f5f5f5; padding:10px; border-radius:30px; width:100%;">
+        </div>
+        <div style="margin-bottom:12px;">
+            <label>姓名 <span style="color:red;">*</span></label>
+            <input type="text" id="orderName" placeholder="请输入姓名" style="padding:10px; border-radius:30px; width:100%; border:1px solid #ddd;">
+        </div>
+        <div style="margin-bottom:12px;">
+            <label>手机号 <span style="color:red;">*</span></label>
+            <input type="tel" id="orderPhone" placeholder="请输入手机号" style="padding:10px; border-radius:30px; width:100%; border:1px solid #ddd;">
+        </div>
+        <button id="submitOrderBtn" style="width:100%; padding:12px; background:#B84A3C; color:white; border:none; border-radius:40px;">✅ 提交订单</button>
+        <button id="closeOrderBtn" style="width:100%; margin-top:8px; padding:10px; background:#E8D5C4; border:none; border-radius:40px;">取消</button>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    // ---------- 基础数据 ----------
+    const STORAGE_KEY = 'diy_orders';
+    const ORDER_NO_KEY = 'last_order_no';
+    let fabricCanvas = null;
+    let currentMockup = 'postcard';
+    let historyStack = [];
+    let historyIndex = -1;
+    let currentCategory = "三坊七巷";
+
+    const themeData = {
+        "三坊七巷": ["🏯 古厝飞檐", "🏮 石板巷", "🪷 马鞍墙", "🖼️ 爱心树"],
+        "福州特色": ["🎪 福", "🌼 茉莉花", "🍡 鱼丸", "🏮 红墙"],
+        "上下杭": ["⛵ 上下杭", "🌃 夜景"],
+        "西禅寺": ["🏯 西禅寺"],
+        "地标建筑": ["🏯 白塔", "🏯 乌塔", "🏛️ 镇海楼"]
+    };
+    const themeColor = {
+        "三坊七巷": "#b35f2d",
+        "福州特色": "#8fbc8f",
+        "上下杭": "#5b7c5c",
+        "西禅寺": "#b8865b",
+        "地标建筑": "#4a6fa5"
+    };
+    const canvasSizes = {
+        postcard: { width: 500, height: 333 },
+        tote: { width: 375, height: 500 }
+    };
+    const presetPhrases = ['有福之州', '平安喜乐', '长乐未央', '岁岁平安', '家和万事兴', '福到家门'];
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.innerText = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // 初始化画布
+    function initCanvas() {
+        const canvasEl = document.getElementById('designCanvas');
+        const size = canvasSizes[currentMockup];
+        canvasEl.width = size.width;
+        canvasEl.height = size.height;
+        if (fabricCanvas) fabricCanvas.dispose();
+        fabricCanvas = new fabric.Canvas('designCanvas', {
+            width: size.width,
+            height: size.height,
+            selection: true,
+            preserveObjectStacking: true,
+            enableTouchScrolling: false,
+            uniScaleTransform: true,
+            centeredScaling: false
+        });
+        // 设置控制点便于手指操作
+        fabric.Object.prototype.set({
+            cornerSize: 24,
+            cornerTouchSize: 48,
+            cornerColor: '#B84A3C',
+            borderColor: '#C9A87C',
+            transparentCorners: false,
+            selectable: true,
+            hasControls: true,
+            hasBorders: true
+        });
+        if (currentMockup === 'postcard') {
+            fabricCanvas.setBackgroundColor('#ffffff', fabricCanvas.renderAll.bind(fabricCanvas));
+        } else {
+            fabricCanvas.setBackgroundColor('#F5F0E6', fabricCanvas.renderAll.bind(fabricCanvas));
+        }
+        // 添加默认文字示例
+        const defaultText = new fabric.Text('福州·三坊七巷', {
+            left: 50,
+            top: 50,
+            fontSize: 20,
+            fill: '#b45f2b',
+            fontFamily: 'Noto Serif SC'
+        });
+        fabricCanvas.add(defaultText);
+        fabricCanvas.renderAll();
+        saveHistory();
+        updatePreviewThumb();
+    }
+
+    function saveHistory() {
+        if (!fabricCanvas) return;
+        const json = JSON.stringify(fabricCanvas.toJSON());
+        historyStack = historyStack.slice(0, historyIndex + 1);
+        historyStack.push(json);
+        historyIndex++;
+        if (historyStack.length > 20) historyStack.shift();
+    }
+
+    function undo() {
+        if (historyIndex > 0) {
+            historyIndex--;
+            fabricCanvas.loadFromJSON(historyStack[historyIndex], () => {
+                fabricCanvas.renderAll();
+                updatePreviewThumb();
+                showToast('撤销');
+            });
+        } else {
+            showToast('没有可撤销的操作');
+        }
+    }
+
+    function zoomIn() {
+        const active = fabricCanvas.getActiveObject();
+        if (!active) { showToast('请先选中一个元素'); return; }
+        let scale = (active.scaleX || 1) + 0.1;
+        if (scale > 3) scale = 3;
+        active.set('scaleX', scale);
+        active.set('scaleY', scale);
+        fabricCanvas.renderAll();
+        saveHistory();
+        updatePreviewThumb();
+    }
+
+    function zoomOut() {
+        const active = fabricCanvas.getActiveObject();
+        if (!active) { showToast('请先选中一个元素'); return; }
+        let scale = (active.scaleX || 1) - 0.1;
+        if (scale < 0.3) scale = 0.3;
+        active.set('scaleX', scale);
+        active.set('scaleY', scale);
+        fabricCanvas.renderAll();
+        saveHistory();
+        updatePreviewThumb();
+    }
+
+    function deleteSelected() {
+        const active = fabricCanvas.getActiveObject();
+        if (active) {
+            fabricCanvas.remove(active);
+            fabricCanvas.renderAll();
+            saveHistory();
+            updatePreviewThumb();
+            showToast('已删除');
+        } else {
+            showToast('请先选中一个元素');
+        }
+    }
+
+    function updatePreviewThumb() {
+        const thumbImg = document.getElementById('previewThumbImg');
+        if (!thumbImg) return;
+        thumbImg.src = fabricCanvas.toDataURL('image/png');
+    }
+
+    function switchMode(mode) {
+        if (mode === currentMockup) return;
+        const oldJson = JSON.stringify(fabricCanvas.toJSON());
+        currentMockup = mode;
+        const oldSize = canvasSizes[mode === 'postcard' ? 'tote' : 'postcard'];
+        const newSize = canvasSizes[mode];
+        const parsed = JSON.parse(oldJson);
+        if (parsed.objects) {
+            parsed.objects.forEach(obj => {
+                const relX = obj.left / oldSize.width;
+                const relY = obj.top / oldSize.height;
+                obj.left = relX * newSize.width;
+                obj.top = relY * newSize.height;
+                obj.scaleX = obj.scaleX || 1;
+                obj.scaleY = obj.scaleY || 1;
+            });
+        }
+        const newJson = JSON.stringify(parsed);
+        initCanvas();
+        fabricCanvas.loadFromJSON(newJson, () => {
+            fabricCanvas.renderAll();
+            saveHistory();
+            updatePreviewThumb();
+        });
+        showToast(`已切换至${mode === 'postcard' ? '明信片' : '帆布袋'}模式`);
+    }
+
+    function addPattern(name) {
+        const parts = name.split(' ');
+        const label = parts.slice(1).join(' ') || name;
+        const centerX = fabricCanvas.width / 2;
+        const centerY = fabricCanvas.height / 2;
+        const textObj = new fabric.Text(label, {
+            left: centerX,
+            top: centerY,
+            fontSize: 28,
+            fontFamily: 'Noto Serif SC',
+            fill: themeColor[currentCategory] || '#b45f2b',
+            originX: 'center',
+            originY: 'center'
+        });
+        fabricCanvas.add(textObj);
+        fabricCanvas.setActiveObject(textObj);
+        fabricCanvas.renderAll();
+        saveHistory();
+        updatePreviewThumb();
+        showToast(`已添加: ${label}`);
+    }
+
+    function addUserText(customText) {
+        let content = customText || document.getElementById('userTextInput').value.trim();
+        if (!content) content = '福州·有福';
+        const fontFamily = document.getElementById('fontFamilySelect').value;
+        const fontSize = parseInt(document.getElementById('fontSizeSelect').value);
+        const color = document.getElementById('textColorPicker').value;
+        const centerX = fabricCanvas.width / 2;
+        const centerY = fabricCanvas.height / 2;
+        const textObj = new fabric.Text(content, {
+            left: centerX,
+            top: centerY,
+            fontSize: fontSize,
+            fontFamily: fontFamily,
+            fill: color,
+            originX: 'center',
+            originY: 'center'
+        });
+        fabricCanvas.add(textObj);
+        fabricCanvas.setActiveObject(textObj);
+        fabricCanvas.renderAll();
+        saveHistory();
+        updatePreviewThumb();
+        showToast(`已添加文字: ${content}`);
+        if (!customText) document.getElementById('userTextInput').value = '';
+    }
+
+    function openOrderModal() {
+        const orderNo = (parseInt(localStorage.getItem(ORDER_NO_KEY) || '0') + 1);
+        document.getElementById('orderNo').value = orderNo;
+        document.getElementById('orderName').value = '';
+        document.getElementById('orderPhone').value = '';
+        document.getElementById('orderModal').classList.add('active');
+    }
+
+    function closeOrderModal() {
+        document.getElementById('orderModal').classList.remove('active');
+    }
+
+    function submitOrder() {
+        const orderNo = (parseInt(localStorage.getItem(ORDER_NO_KEY) || '0') + 1);
+        const name = document.getElementById('orderName').value.trim();
+        const phone = document.getElementById('orderPhone').value.trim();
+        if (!name) { showToast('请输入姓名'); return; }
+        if (!phone || !/^1[3-9]\d{9}$/.test(phone)) { showToast('请输入正确的手机号'); return; }
+        localStorage.setItem(ORDER_NO_KEY, orderNo);
+        const design = fabricCanvas.toDataURL('image/png');
+        const pickupCode = Math.floor(100000 + Math.random() * 900000);
+        const orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        orders.push({
+            orderNo, name, phone, design,
+            time: new Date().toLocaleString(),
+            timestamp: Date.now(),
+            status: '待制作',
+            pickupCode
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+        showToast(`订单已提交！取件码：${pickupCode}`);
+        closeOrderModal();
+    }
+
+    function showPreview() {
+        const fullImg = document.getElementById('previewFullImg');
+        fullImg.src = fabricCanvas.toDataURL('image/png');
+        document.getElementById('previewModal').classList.add('active');
+    }
+    function closePreview() {
+        document.getElementById('previewModal').classList.remove('active');
+    }
+
+    function renderCategories() {
+        const container = document.getElementById('categoryTabs');
+        container.innerHTML = '';
+        Object.keys(themeData).forEach(cat => {
+            const btn = document.createElement('div');
+            btn.className = `cat-btn ${cat === currentCategory ? 'active' : ''}`;
+            btn.innerText = cat;
+            btn.onclick = () => {
+                currentCategory = cat;
+                renderCategories();
+                renderPatterns();
+            };
+            container.appendChild(btn);
+        });
+    }
+
+    function renderPatterns() {
+        const grid = document.getElementById('patternGrid');
+        grid.innerHTML = '';
+        const patterns = themeData[currentCategory];
+        patterns.forEach(name => {
+            const div = document.createElement('div');
+            div.className = 'pattern-item';
+            const emoji = name.split(' ')[0];
+            const label = name.split(' ').slice(1).join(' ') || name;
+            div.innerHTML = `<div class="pattern-emoji">${emoji}</div><div class="pattern-label">${label}</div>`;
+            div.onclick = () => addPattern(name);
+            grid.appendChild(div);
+        });
+    }
+
+    function initPresetPhrases() {
+        const container = document.getElementById('presetPhrases');
+        presetPhrases.forEach(p => {
+            const span = document.createElement('span');
+            span.className = 'preset-phrase';
+            span.innerText = p;
+            span.onclick = () => addUserText(p);
+            container.appendChild(span);
+        });
+    }
+
+    function bindEvents() {
+        document.getElementById('undoBtn').onclick = undo;
+        document.getElementById('zoomInBtn').onclick = zoomIn;
+        document.getElementById('zoomOutBtn').onclick = zoomOut;
+        document.getElementById('deleteBtn').onclick = deleteSelected;
+        document.getElementById('orderBtn').onclick = openOrderModal;
+        document.getElementById('addTextBtn').onclick = () => addUserText();
+        document.getElementById('closeOrderBtn').onclick = closeOrderModal;
+        document.getElementById('submitOrderBtn').onclick = submitOrder;
+        document.getElementById('previewThumb').onclick = showPreview;
+        document.getElementById('closePreviewBtn').onclick = closePreview;
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                switchMode(btn.dataset.mode);
+            };
+        });
+    }
+
+    window.onload = () => {
+        renderCategories();
+        renderPatterns();
+        initPresetPhrases();
+        initCanvas();
+        bindEvents();
+        window.addEventListener('resize', () => setTimeout(() => updatePreviewThumb(), 100));
+        showToast('长按元素可拖拽移动，点击按钮缩放');
+    };
+</script>
+</body>
+</html>
