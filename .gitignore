@@ -19,3 +19,6 @@ Thumbs.db
 dist/
 build/
 deploy/
+
+# 大文件（内联版本）
+index-inline-final.html
