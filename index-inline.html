@@ -90,7 +90,7 @@
         .preview-modal.active { display: flex; }
         .preview-close { position: absolute; top: 20px; right: 20px; width: 52px; height: 52px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.5rem; }
         .preview-content { width: 95vw; height: 70vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .preview-content img { max-width: 100%; max-height: 100%; object-fit: contain; background: white; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.3); border: 1px solid #E5DED5; min-width: 100px; min-height: 100px; display: block; }
+        .preview-content img { width: 100%; height: 100%; object-fit: contain; background: #FFFDF5; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.3); border: 2px solid #C9A87C; min-width: 200px; min-height: 200px; display: block; }
         .preview-controls { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; padding-bottom: env(safe-area-inset-bottom); }
         .preview-btn { padding: 14px 24px; background: rgba(255,255,255,0.9); border: none; border-radius: 40px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; transition: transform 0.1s; }
         .preview-btn:active { transform: scale(0.96); }
@@ -245,6 +245,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="js/image-data.js"></script>
 <script>
 var STORAGE_KEY = 'diy_orders';
 var ORDER_NO_KEY = 'last_order_no';
@@ -252,11 +253,11 @@ var DRAFT_KEY = 'diy_draft';
 var MAX_HISTORY_STEPS = 20;
 
 var themeData = {
-    "三坊七巷": ["图画/爱心树.png 爱心树", "图画/林则徐纪念馆.png 林则徐", "图画/马鞍墙.png 马鞍墙", "图画/三坊七巷.png 三坊七巷"],
-    "福州特色": ["图画/福.png 福", "图画/古厝飞檐.png 古厝", "图画/红墙.jpg 红墙", "图画/流苏.jpg 流苏", "图画/茉莉花.png 茉莉", "图画/鱼丸.png 鱼丸", "图画/州.png 州"],
-    "上下杭": ["图画/上下杭.png 上下杭", "图画/夜景.jpg 夜景"],
-    "西禅寺": ["图画/西禅寺.png 西禅寺"],
-    "地标建筑": ["图画/白塔.png 白塔", "图画/乌塔.png 乌塔", "图画/五一广场.png 五一广场", "图画/镇海楼.png 镇海楼"]
+    "三坊七巷": ["爱心树", "林则徐纪念馆", "马鞍墙", "三坊七巷"],
+    "福州特色": ["福", "古厝飞檐", "红墙", "流苏", "茉莉花", "鱼丸", "州"],
+    "上下杭": ["上下杭", "夜景"],
+    "西禅寺": ["西禅寺"],
+    "地标建筑": ["白塔", "乌塔", "五一广场", "镇海楼"]
 };
 var themeColor = { "三坊七巷":"#b35f2d","福州特色":"#8fbc8f","上下杭":"#5b7c5c","西禅寺":"#b8865b","地标建筑":"#4a6fa5" };
 
@@ -361,10 +362,12 @@ function initFabric(keepContent, oldCanvasJson) {
     });
     
     fabricCanvas.on('object:moving', function(e) {
+        scheduleUpdateMockup();
     });
     
     fabricCanvas.on('object:scaling', function(e) {
         validateObjectSize(e.target);
+        scheduleUpdateMockup();
     });
     
     fabricCanvas.on('object:added', function() {
@@ -541,6 +544,11 @@ function switchMockupMode(mode) {
     });
     document.querySelector('.mockup-type-btn[data-type="' + mode + '"]').classList.add('active');
     showToast('已切换到' + (mode === 'postcard' ? '明信片' : '帆布袋') + '模式');
+    
+    // 切换模式后立即更新预览图
+    setTimeout(function() {
+        updateMockup();
+    }, 100);
 }
 
 function updateDeleteBtn() {
@@ -555,6 +563,7 @@ function deleteSelected() {
         saveHistory();
         showToast('已删除');
         vibrate();
+        updateMockup();
     }
 }
 
@@ -642,12 +651,16 @@ function renderPatterns() {
     var grid = document.getElementById('patternGrid');
     grid.innerHTML = '';
     themeData[currentCategory].forEach(function(name) {
-        var parts = name.split(' ');
-        var imgPath = parts[0];
-        var label = parts.slice(1).join(' ');
+        var imgData = window.imageData && window.imageData[name];
         var div = document.createElement('div');
         div.className = 'pattern-item';
-        div.innerHTML = '<div class="pattern-emoji"><img src="' + imgPath + '" alt="' + label + '" style="width:100%;height:100%;object-fit:contain;"></div><div class="pattern-label">' + label + '</div>';
+        
+        if (imgData) {
+            div.innerHTML = '<div class="pattern-emoji"><img src="' + imgData + '" alt="' + name + '" style="width:100%;height:100%;object-fit:contain;"></div><div class="pattern-label">' + name + '</div>';
+        } else {
+            div.innerHTML = '<div class="pattern-emoji">' + name + '</div><div class="pattern-label">' + name + '</div>';
+        }
+        
         div.onclick = function() {
             vibrate();
             addPatternToCanvas(name, themeColor[currentCategory]);
@@ -659,49 +672,71 @@ function renderPatterns() {
 function addPatternToCanvas(name, color) {
     var centerX = fabricCanvas.width / 2;
     var centerY = fabricCanvas.height / 2;
-    var parts = name.split(' ');
-    var imgPath = parts[0];
-    var label = parts.slice(1).join(' ');
+    var label = name;
     
-    // 先尝试直接加载
-    fabric.Image.fromURL(imgPath, function(img) {
-        // 调整图片大小，使其适合画布
-        var maxWidth = fabricCanvas.width * 0.5;
-        var maxHeight = fabricCanvas.height * 0.5;
-        var scale = Math.min(maxWidth / img.width, maxHeight / img.height);
-        
-        img.set({
+    var imgData = window.imageData && window.imageData[name];
+    
+    if (imgData) {
+        fabric.Image.fromURL(imgData, function(img) {
+            if (!img || img.width === 0 || img.height === 0) {
+                console.error('图片加载失败或尺寸无效:', name);
+                showToast('图片加载失败');
+                return;
+            }
+            
+            console.log('图片加载成功:', name, '尺寸:', img.width + 'x' + img.height);
+            
+            var maxWidth = fabricCanvas.width * 0.5;
+            var maxHeight = fabricCanvas.height * 0.5;
+            var scale = Math.min(maxWidth / img.width, maxHeight / img.height);
+            
+            console.log('缩放比例:', scale, '画布尺寸:', fabricCanvas.width + 'x' + fabricCanvas.height);
+            
+            img.set({
+                left: centerX,
+                top: centerY,
+                originX: 'center',
+                originY: 'center',
+                selectable: true,
+                hasControls: true,
+                hasBorders: true,
+                evented: true,
+                lockUniScaling: false,
+                transparentCorners: false,
+                cornerSize: 24,
+                cornerTouchSize: 48,
+                visible: true,
+                opacity: 1
+            });
+            
+            img.scale(scale);
+            
+            fabricCanvas.add(img);
+            fabricCanvas.setActiveObject(img);
+            fabricCanvas.bringToFront(img);
+            
+            console.log('对象已添加，位置:', img.left, img.top, '缩放:', img.scaleX);
+            console.log('画布对象数量:', fabricCanvas.getObjects().length);
+            
+            fabricCanvas.renderAll();
+            saveHistory();
+            showToast('已添加: ' + label);
+            vibrate();
+            
+            setTimeout(function() {
+                updateMockup();
+            }, 100);
+        }, { crossOrigin: 'Anonymous', onError: function(err) {
+            console.error('图片加载错误:', name, err);
+            showToast('图片加载失败');
+        }});
+    } else {
+        // 如果没有图片数据，使用文字作为备用
+        var obj = new fabric.Text(label, {
             left: centerX,
             top: centerY,
-            originX: 'center',
-            originY: 'center',
-            selectable: true,
-            hasControls: true,
-            hasBorders: true,
-            evented: true,
-            lockUniScaling: false,
-            transparentCorners: false,
-            cornerSize: 24,
-            cornerTouchSize: 48
-        });
-        
-        img.scale(scale);
-        
-        fabricCanvas.add(img);
-        fabricCanvas.setActiveObject(img);
-        fabricCanvas.renderAll();
-        saveHistory();
-        showToast('已添加: ' + label);
-        vibrate();
-    }, function(err) {
-        console.error('图片加载失败，尝试备用方案:', err);
-        // 如果图片加载有问题，使用 emoji 作为备用
-        var emoji = '🖼️';
-        var obj = new fabric.Text(emoji, {
-            left: centerX,
-            top: centerY,
-            fontSize: 48,
-            fontFamily: 'sans-serif',
+            fontSize: 24,
+            fontFamily: 'Noto Serif SC',
             fill: color,
             originX: 'center',
             originY: 'center',
@@ -721,7 +756,8 @@ function addPatternToCanvas(name, color) {
         saveHistory();
         showToast('已添加: ' + label);
         vibrate();
-    }, { crossOrigin: 'anonymous' });
+        updateMockup();
+    }
 }
 
 function addUserText(customText) {
@@ -767,6 +803,7 @@ function addUserText(customText) {
         saveHistory();
         showToast('已添加文字: ' + content);
         vibrate();
+        updateMockup();
         
         if (!customText) {
             document.getElementById('userTextInput').value = '';
@@ -784,49 +821,30 @@ function updateMockup() {
     if (!thumbImg) return;
     
     try {
-        console.log('正在更新缩略图...');
-        // 尝试直接使用画布对象渲染
-        var tempCanvas = fabricCanvas.toCanvasElement(1);
-        var designURL = tempCanvas.toDataURL('image/png');
-        console.log('缩略图URL长度:', designURL.length);
-        
-        thumbImg.onload = function() {
-            console.log('缩略图已加载');
-        };
-        thumbImg.onerror = function() {
-            console.error('缩略图加载失败');
-        };
-        
+        var designURL = fabricCanvas.toDataURL({ format: 'png', multiplier: 1 });
         thumbImg.src = designURL;
-        
-        // 同时也更新预览图
-        updatePreviewModal();
-        
     } catch (e) {
         console.error('updateMockup error:', e);
+        thumbImg.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"><rect fill="#f5f5f5" width="60" height="60" rx="8"/><text fill="#999" font-family="sans-serif" font-size="10" x="50%" y="50%" text-anchor="middle" dominant-baseline="middle">预览</text></svg>';
     }
 }
 
 function updatePreviewModal() {
     var previewImg = document.getElementById('previewImage');
+    var modal = document.getElementById('previewModal');
+    
+    if (!modal || !modal.classList.contains('active')) {
+        return;
+    }
+    
     if (!previewImg) return;
     
     try {
-        console.log('正在生成预览图...');
-        // 使用相同的方法生成预览图
-        var tempCanvas = fabricCanvas.toCanvasElement(1);
-        var designURL = tempCanvas.toDataURL('image/png');
-        console.log('预览图已生成，URL长度:', designURL.length);
-        
-        previewImg.onload = function() {
-            console.log('预览图已加载');
-        };
-        previewImg.onerror = function() {
-            console.error('预览图加载失败');
-        };
-        
-        previewImg.src = designURL;
-        
+        previewImg.src = fabricCanvas.toDataURL({ 
+            format: 'png', 
+            multiplier: 2,
+            backgroundColor: '#FFFDF5'
+        });
     } catch (e) {
         console.error('updatePreviewModal error:', e);
     }
@@ -926,13 +944,15 @@ function generateToteBackground() {
 }
 
 function openPreviewModal() {
-    console.log('打开预览');
+    var previewImg = document.getElementById('previewImage');
     document.getElementById('previewModal').classList.add('active');
     
-    // 确保 DOM 更新后再生成预览
-    setTimeout(function() {
-        updatePreviewModal();
-    }, 100);
+    try {
+        previewImg.src = fabricCanvas.toDataURL({ format: 'png', multiplier: 2 });
+    } catch (e) {
+        console.error('openPreviewModal error:', e);
+        previewImg.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200"><rect fill="#f5f5f5" width="300" height="200" rx="8"/><text fill="#999" font-family="sans-serif" font-size="14" x="50%" y="50%" text-anchor="middle" dominant-baseline="middle">预览生成失败</text></svg>';
+    }
 }
 
 function closePreviewModal() {
@@ -1012,11 +1032,15 @@ function copyPickupCode() {
 }
 
 function autoSaveDraft() {
-    var draft = {
-        canvas: fabricCanvas.toJSON(),
-        timestamp: Date.now()
-    };
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    try {
+        var draft = {
+            canvas: fabricCanvas.toJSON(),
+            timestamp: Date.now()
+        };
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch (e) {
+        console.warn('自动保存失败:', e.message);
+    }
 }
 
 function checkDraft() {
