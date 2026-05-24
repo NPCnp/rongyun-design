@@ -6,9 +6,6 @@ node_modules/
 .vscode/
 .idea/
 
-# 原始图片文件夹（图片已编码到 image-data.js）
-图画/
-
 # 日志和临时文件
 *.log
 *.tmp
