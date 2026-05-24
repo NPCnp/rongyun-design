@@ -22,11 +22,432 @@
         <div class="logo">榕韵亲子定制</div>
         <div class="subtitle">自助设计系统</div>
         <div class="qrcode-wrapper">
-            <img class="qrcode" src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=https://poetic-chebakia-4d9196.netlify.app/index-inline.html" alt="扫码进入">
+            <canvas id="qrcodeCanvas" class="qrcode"></canvas>
         </div>
         <div class="hint">📱 请使用手机扫码</div>
         <div class="url">https://poetic-chebakia-4d9196.netlify.app/index-inline.html</div>
     </div>
     <div class="footer">© 2024 榕韵亲子定制</div>
+
+    <script>
+        function generateQRCode(text, size) {
+            var qr = qrcode(0, 'L');
+            qr.addData(text);
+            qr.make();
+            return qr.createImgTag(4, 8, '二维码');
+        }
+
+        function qrcode(typeNumber, errorCorrectLevel) {
+            this.typeNumber = typeNumber;
+            this.errorCorrectLevel = errorCorrectLevel;
+            this.modules = null;
+            this.moduleCount = 0;
+            this.dataCache = null;
+            this.dataList = [];
+
+            this.addData = function(data) {
+                var newData = convertStringToBytes(data);
+                for (var i = 0; i < newData.length; i++) {
+                    this.dataList.push(newData[i]);
+                }
+            };
+
+            this.isDark = function(row, col) {
+                if (row < 0 || row >= this.moduleCount || col < 0 || col >= this.moduleCount) {
+                    return false;
+                }
+                return this.modules[row][col];
+            };
+
+            this.make = function() {
+                var capacity = getCapacity(this.typeNumber, this.errorCorrectLevel);
+                var data = createData(this.typeNumber, this.errorCorrectLevel, this.dataList);
+                this.modules = encodeData(this.typeNumber, this.errorCorrectLevel, data);
+                this.moduleCount = this.modules.length;
+            };
+
+            this.createImgTag = function(cellSize, margin, alt) {
+                var size = this.moduleCount * cellSize + margin * 2;
+                var img = document.createElement('img');
+                img.src = this.createDataURL(cellSize, margin);
+                img.width = size;
+                img.height = size;
+                if (alt) img.alt = alt;
+                return img;
+            };
+
+            this.createDataURL = function(cellSize, margin) {
+                var size = this.moduleCount * cellSize + margin * 2;
+                var canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                var ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, size, size);
+                ctx.fillStyle = '#000000';
+                for (var row = 0; row < this.moduleCount; row++) {
+                    for (var col = 0; col < this.moduleCount; col++) {
+                        if (this.modules[row][col]) {
+                            ctx.fillRect(col * cellSize + margin, row * cellSize + margin, cellSize, cellSize);
+                        }
+                    }
+                }
+                return canvas.toDataURL('image/png');
+            };
+
+            function convertStringToBytes(str) {
+                var bytes = [];
+                for (var i = 0; i < str.length; i++) {
+                    var code = str.charCodeAt(i);
+                    if (code > 0xFF) {
+                        bytes.push(0xE0 | ((code >> 12) & 0xF));
+                        bytes.push(0x80 | ((code >> 6) & 0x3F));
+                        bytes.push(0x80 | (code & 0x3F));
+                    } else {
+                        bytes.push(code);
+                    }
+                }
+                return bytes;
+            }
+
+            function getCapacity(typeNumber, errorCorrectLevel) {
+                var rsBlocks = getRsBlockTable(typeNumber, errorCorrectLevel);
+                var totalData = 0;
+                for (var i = 0; i < rsBlocks.length; i++) {
+                    totalData += rsBlocks[i].dataCount;
+                }
+                return totalData * 8;
+            }
+
+            function getRsBlockTable(typeNumber, errorCorrectLevel) {
+                var rsBlock = [];
+                var rsBlockTable = [
+                    [[1, 26, 19]],
+                    [[1, 44, 34]],
+                    [[1, 70, 55]],
+                    [[1, 100, 80]],
+                    [[1, 134, 108]],
+                    [[2, 86, 68]],
+                    [[2, 108, 86]],
+                    [[2, 136, 108]],
+                    [[2, 156, 124]],
+                    [[2, 194, 154]],
+                    [[2, 232, 184]],
+                    [[2, 274, 218]],
+                    [[2, 320, 254]],
+                    [[2, 368, 292]],
+                    [[2, 418, 334]],
+                    [[2, 470, 378]],
+                    [[4, 130, 102]],
+                    [[4, 150, 116]],
+                    [[4, 172, 136]],
+                    [[4, 196, 154]],
+                    [[4, 222, 174]],
+                    [[4, 250, 196]],
+                    [[4, 280, 220]],
+                    [[4, 312, 246]],
+                    [[6, 198, 156]],
+                    [[6, 222, 174]],
+                    [[6, 250, 196]],
+                    [[6, 272, 214]],
+                    [[6, 300, 236]],
+                    [[6, 330, 260]],
+                    [[8, 156, 122]],
+                    [[8, 178, 138]],
+                    [[8, 202, 158]],
+                    [[8, 228, 178]],
+                    [[8, 256, 200]],
+                    [[8, 286, 222]],
+                    [[8, 318, 246]],
+                    [[10, 216, 168]],
+                    [[10, 240, 186]],
+                    [[10, 266, 206]]
+                ];
+                var table = rsBlockTable[typeNumber - 1];
+                for (var i = 0; i < table.length; i++) {
+                    rsBlock.push({ count: table[i][0], totalCount: table[i][1], dataCount: table[i][2] });
+                }
+                return rsBlock;
+            }
+
+            function createData(typeNumber, errorCorrectLevel, dataList) {
+                var capacity = getCapacity(typeNumber, errorCorrectLevel);
+                var data = [];
+                var length = dataList.length;
+                data.push(length >>> 8);
+                data.push(length & 0xFF);
+                for (var i = 0; i < dataList.length; i++) {
+                    data.push(dataList[i]);
+                }
+                while (data.length * 8 < capacity) {
+                    data.push(data.length % 2 === 0 ? 0xEC : 0x11);
+                }
+                return data;
+            }
+
+            function encodeData(typeNumber, errorCorrectLevel, data) {
+                var rsBlocks = getRsBlockTable(typeNumber, errorCorrectLevel);
+                var size = typeNumber * 4 + 17;
+                var modules = createEmptyMatrix(size);
+                setupPositionProbePattern(modules, size);
+                setupPositionAdjustPattern(modules, size, typeNumber);
+                setupTimingPattern(modules, size);
+                setupTypeInfo(modules, size, errorCorrectLevel);
+                if (typeNumber >= 7) {
+                    setupTypeNumber(modules, size, typeNumber);
+                }
+                var dataIndex = 0;
+                var currentBit = 0;
+                var moduleIndex = 0;
+                var dataBytes = convertDataToCodewords(data, rsBlocks);
+                for (var row = size - 1; row >= 0; row -= 2) {
+                    if (row === 6) row--;
+                    for (var col = size - 1; col >= 0; col--) {
+                        for (var r = 0; r < 2; r++) {
+                            var currentRow = row - r;
+                            if (isDark(modules, currentRow, col)) {
+                                continue;
+                            }
+                            var dark = false;
+                            if (moduleIndex < dataBytes.length * 8) {
+                                dark = (dataBytes[Math.floor(moduleIndex / 8)] >>> (7 - (moduleIndex % 8))) & 1;
+                            }
+                            modules[currentRow][col] = dark;
+                            moduleIndex++;
+                        }
+                    }
+                }
+                return modules;
+            }
+
+            function createEmptyMatrix(size) {
+                var modules = [];
+                for (var i = 0; i < size; i++) {
+                    modules[i] = [];
+                    for (var j = 0; j < size; j++) {
+                        modules[i][j] = false;
+                    }
+                }
+                return modules;
+            }
+
+            function isDark(modules, row, col) {
+                if (row < 0 || row >= modules.length || col < 0 || col >= modules.length) {
+                    return false;
+                }
+                return modules[row][col];
+            }
+
+            function setupPositionProbePattern(modules, size) {
+                drawSquare(modules, 0, 0);
+                drawSquare(modules, size - 7, 0);
+                drawSquare(modules, 0, size - 7);
+            }
+
+            function drawSquare(modules, row, col) {
+                for (var r = -1; r <= 7; r++) {
+                    for (var c = -1; c <= 7; c++) {
+                        if (row + r >= 0 && row + r < modules.length && col + c >= 0 && col + c < modules.length) {
+                            modules[row + r][col + c] = (r >= 0 && r <= 6 && c >= 0 && c <= 6) && !(r > 1 && r < 5 && c > 1 && c < 5);
+                        }
+                    }
+                }
+            }
+
+            function setupPositionAdjustPattern(modules, size, typeNumber) {
+                var pos = getPositionAdjustPatternPosition(typeNumber);
+                for (var i = 0; i < pos.length; i++) {
+                    for (var j = 0; j < pos.length; j++) {
+                        var row = pos[i];
+                        var col = pos[j];
+                        if (!modules[row][col]) {
+                            for (var r = -2; r <= 2; r++) {
+                                for (var c = -2; c <= 2; c++) {
+                                    modules[row + r][col + c] = (r === -2 || r === 2 || c === -2 || c === 2) || (r === 0 && c === 0);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            function getPositionAdjustPatternPosition(typeNumber) {
+                var positions = [
+                    [],
+                    [],
+                    [6, 18],
+                    [6, 22],
+                    [6, 26],
+                    [6, 30],
+                    [6, 34],
+                    [6, 22, 38],
+                    [6, 24, 42],
+                    [6, 26, 46],
+                    [6, 28, 50],
+                    [6, 30, 54],
+                    [6, 32, 58],
+                    [6, 34, 62],
+                    [6, 26, 46, 66],
+                    [6, 26, 48, 70],
+                    [6, 26, 50, 74],
+                    [6, 30, 54, 78],
+                    [6, 30, 56, 82],
+                    [6, 30, 58, 86],
+                    [6, 34, 62, 90],
+                    [6, 28, 50, 72, 94],
+                    [6, 26, 50, 74, 98],
+                    [6, 30, 54, 78, 102],
+                    [6, 28, 54, 80, 106],
+                    [6, 32, 58, 84, 110],
+                    [6, 30, 58, 86, 114],
+                    [6, 34, 62, 90, 118],
+                    [6, 26, 50, 74, 98, 122],
+                    [6, 30, 54, 78, 102, 126],
+                    [6, 26, 52, 78, 104, 130],
+                    [6, 30, 56, 82, 108, 134],
+                    [6, 34, 60, 86, 112, 138],
+                    [6, 30, 58, 86, 114, 142],
+                    [6, 34, 62, 90, 118, 146],
+                    [6, 30, 54, 78, 102, 126, 150],
+                    [6, 24, 50, 76, 102, 128, 154],
+                    [6, 28, 54, 80, 106, 132, 158],
+                    [6, 32, 58, 84, 110, 136, 162],
+                    [6, 26, 52, 78, 104, 130, 156, 170]
+                ];
+                return positions[typeNumber - 1];
+            }
+
+            function setupTimingPattern(modules, size) {
+                for (var i = 8; i < size - 8; i++) {
+                    if (!modules[6][i]) modules[6][i] = i % 2 === 0;
+                    if (!modules[i][6]) modules[i][6] = i % 2 === 0;
+                }
+            }
+
+            function setupTypeInfo(modules, size, errorCorrectLevel) {
+                var data = (errorCorrectLevel << 3) | 0;
+                var ecc = calculateBCHTypeInfo(data);
+                var code = (data << 10) | ecc;
+                for (var i = 0; i < 15; i++) {
+                    var mod = i < 6 || (i >= 8 && i < 13);
+                    if (mod) {
+                        var row = i < 6 ? 8 : size - 15 + i;
+                        var col = i < 6 ? size - 1 : 8;
+                        modules[row][col] = (code >>> (14 - i)) & 1;
+                    }
+                }
+            }
+
+            function calculateBCHTypeInfo(data) {
+                var d = data << 10;
+                while (getBCHDigit(d) - getBCHDigit(0x537) >= 0) {
+                    d ^= (0x537 << (getBCHDigit(d) - getBCHDigit(0x537)));
+                }
+                return d ^ (data << 10);
+            }
+
+            function getBCHDigit(data) {
+                var digit = 0;
+                while (data !== 0) {
+                    digit++;
+                    data >>>= 1;
+                }
+                return digit;
+            }
+
+            function setupTypeNumber(modules, size, typeNumber) {
+                var data = typeNumber;
+                var ecc = calculateBCHTypeNumber(data);
+                var code = (data << 12) | ecc;
+                for (var i = 0; i < 18; i++) {
+                    var row = Math.floor(i / 3);
+                    var col = (i % 3) + size - 8 - 3;
+                    modules[row][col] = (code >>> (17 - i)) & 1;
+                }
+            }
+
+            function calculateBCHTypeNumber(data) {
+                var d = data << 12;
+                while (getBCHDigit(d) - getBCHDigit(0x1F25) >= 0) {
+                    d ^= (0x1F25 << (getBCHDigit(d) - getBCHDigit(0x1F25)));
+                }
+                return d ^ (data << 12);
+            }
+
+            function convertDataToCodewords(data, rsBlocks) {
+                var codewords = [];
+                var offset = 0;
+                for (var i = 0; i < rsBlocks.length; i++) {
+                    var block = rsBlocks[i];
+                    for (var j = 0; j < block.count; j++) {
+                        var dataBytes = [];
+                        for (var k = 0; k < block.dataCount; k++) {
+                            dataBytes.push(data[offset++]);
+                        }
+                        var eccBytes = generateECC(dataBytes, block.totalCount - block.dataCount);
+                        codewords = codewords.concat(dataBytes).concat(eccBytes);
+                    }
+                }
+                return codewords;
+            }
+
+            function generateECC(data, length) {
+                var gen = getGenerator(length);
+                var ecc = [];
+                for (var i = 0; i < length; i++) {
+                    ecc[i] = 0;
+                }
+                for (var i = 0; i < data.length; i++) {
+                    var feedback = data[i] ^ ecc[0];
+                    ecc.shift();
+                    for (var j = 0; j < length; j++) {
+                        ecc[j] ^= gen[j] & feedback;
+                    }
+                }
+                return ecc;
+            }
+
+            function getGenerator(length) {
+                var gen = [];
+                gen[0] = 1;
+                var root = 1;
+                for (var i = 0; i < length; i++) {
+                    gen.push(0);
+                    for (var j = gen.length - 1; j > 0; j--) {
+                        gen[j] = gen[j - 1] ^ (gen[j] << 1);
+                        if (gen[j] > 255) {
+                            gen[j] ^= 0x11D;
+                        }
+                    }
+                    root = (root << 1) ^ (root >= 128 ? 0x11D : 0);
+                }
+                return gen;
+            }
+
+            return this;
+        }
+
+        window.onload = function() {
+            var url = 'https://poetic-chebakia-4d9196.netlify.app/index-inline.html';
+            var qr = qrcode(0, 'L');
+            qr.addData(url);
+            qr.make();
+            var canvas = document.getElementById('qrcodeCanvas');
+            var ctx = canvas.getContext('2d');
+            var size = qr.moduleCount * 4;
+            canvas.width = size + 32;
+            canvas.height = size + 32;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#000000';
+            for (var row = 0; row < qr.moduleCount; row++) {
+                for (var col = 0; col < qr.moduleCount; col++) {
+                    if (qr.modules[row][col]) {
+                        ctx.fillRect(col * 4 + 16, row * 4 + 16, 4, 4);
+                    }
+                }
+            }
+        };
+    </script>
 </body>
 </html>
