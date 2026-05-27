@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase 测试</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Supabase 连接测试</h1>
+    <div id="status">检查中...</div>
+    <br>
+    <button onclick="testSave()">测试保存订单</button>
+    <button onclick="testLoad()">测试加载订单</button>
+    <div id="log"></div>
+    
+    <script>
+        const log = document.getElementById('log');
+        const status = document.getElementById('status');
+        
+        function addLog(msg) {
+            console.log(msg);
+            log.innerHTML += '<p>' + msg + '</p>';
+        }
+        
+        const SUPABASE_URL = 'https://mmfovpkrzodkvnokauqy.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_LYvf6FRSMSZRc9lfFIKOnA_XG7InVYt';
+        
+        let supabase = null;
+        
+        async function init() {
+            try {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                status.innerHTML = '✅ 连接成功！';
+                status.style.color = 'green';
+                addLog('Supabase 客户端创建成功');
+                
+                await testLoad();
+            } catch (e) {
+                status.innerHTML = '❌ 连接失败: ' + e.message;
+                status.style.color = 'red';
+                addLog('❌ 错误: ' + e.message);
+            }
+        }
+        
+        async function testSave() {
+            if (!supabase) {
+                addLog('❌ Supabase 未初始化');
+                return;
+            }
+            
+            addLog('开始保存测试订单...');
+            
+            try {
+                const orderNo = Date.now();
+                const { data, error } = await supabase.from('orders').insert([{
+                    order_no: orderNo,
+                    name: '测试用户',
+                    phone: '13800138000',
+                    pickup_code: '888888',
+                    design: 'test',
+                    status: '待制作',
+                    time: new Date().toLocaleString()
+                }]);
+                
+                if (error) {
+                    addLog('❌ 保存失败: ' + error.message);
+                    console.error(error);
+                } else {
+                    addLog('✅ 保存成功！订单号: ' + orderNo);
+                    await testLoad();
+                }
+            } catch (e) {
+                addLog('❌ 异常: ' + e.message);
+                console.error(e);
+            }
+        }
+        
+        async function testLoad() {
+            if (!supabase) {
+                addLog('❌ Supabase 未初始化');
+                return;
+            }
+            
+            addLog('开始加载订单...');
+            
+            try {
+                const { data, error } = await supabase
+                    .from('orders')
+                    .select('*')
+                    .order('order_no', { ascending: false });
+                
+                if (error) {
+                    addLog('❌ 加载失败: ' + error.message);
+                    console.error(error);
+                } else {
+                    addLog('✅ 找到 ' + data.length + ' 个订单');
+                    data.forEach(o => {
+                        addLog('订单号: ' + o.order_no + ', 姓名: ' + o.name + ', 状态: ' + o.status);
+                    });
+                }
+            } catch (e) {
+                addLog('❌ 异常: ' + e.message);
+                console.error(e);
+            }
+        }
+        
+        init();
+    </script>
+</body>
+</html>

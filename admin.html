@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单管理 - 榕韵亲子定制</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2?v=20240526"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: #faf5f0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .admin-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .admin-header h1 {
+            font-size: 2.2rem;
+            color: #b45f2b;
+            margin-bottom: 8px;
+        }
+        .admin-header p {
+            font-size: 1.1rem;
+            color: #7a6a5a;
+        }
+        .status-display {
+            margin-top: 15px;
+            padding: 12px;
+            background: #fff;
+            border-radius: 12px;
+            border: 2px solid #e8d5c4;
+            font-size: 0.95rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status-connected { color: #2e7d32; }
+        .status-error { color: #d32f2f; }
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .auto-refresh input { width: 60px; padding: 4px 8px; }
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-top: 8px;
+        }
+        .stat-label {
+            color: #7a6a5a;
+            font-size: 0.9rem;
+        }
+        .stat-total .stat-number { color: #b45f2b; }
+        .stat-pending .stat-number { color: #f59e0b; }
+        .stat-completed .stat-number { color: #2e7d32; }
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .filter-bar label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e8d5c4;
+            border-radius: 30px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-box input:focus {
+            border-color: #b45f2b;
+        }
+        .status-filter {
+            padding: 10px 16px;
+            border: 2px solid #e8d5c4;
+            border-radius: 30px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            background: #fff;
+        }
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary { background: #b45f2b; color: white; }
+        .btn-primary:hover { background: #9a4e24; }
+        .btn-danger { background: #dc2626; color: white; }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-secondary { background: #f5f0eb; color: #4a3728; }
+        .btn-secondary:hover { background: #e8ddd2; }
+        .orders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        .order-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            position: relative;
+        }
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        .order-no {
+            font-weight: 700;
+            color: #b45f2b;
+            font-size: 1.1rem;
+        }
+        .order-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .status-pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        .status-completed {
+            background: #d1fae5;
+            color: #059669;
+        }
+        .order-pickup {
+            background: #b45f2b;
+            color: white;
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .order-pickup:hover { background: #9a4e24; }
+        .order-pickup .label {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+        .order-pickup .code {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            margin-top: 4px;
+        }
+        .order-design {
+            margin: 12px 0;
+            cursor: pointer;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .order-design img {
+            width: 100%;
+            height: 200px;
+            object-fit: contain;
+            background: #f5f0eb;
+            transition: transform 0.3s;
+        }
+        .order-design:hover img {
+            transform: scale(1.02);
+        }
+        .order-info {
+            color: #4a3728;
+            line-height: 1.8;
+        }
+        .order-info div {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .order-actions {
+            margin-top: 16px;
+            display: flex;
+            gap: 10px;
+        }
+        .order-actions .btn {
+            flex: 1;
+            justify-content: center;
+        }
+        .order-checkbox {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            accent-color: #b45f2b;
+        }
+        .image-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            cursor: pointer;
+        }
+        .image-modal.active { display: flex; }
+        .image-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            cursor: default;
+        }
+        .image-modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            background: rgba(0,0,0,0.5);
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        .refresh-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #b45f2b;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1001;
+        }
+        .refresh-indicator.show { opacity: 1; }
+        .no-orders {
+            text-align: center;
+            padding: 60px 20px;
+            color: #7a6a5a;
+            grid-column: 1 / -1;
+        }
+        .no-orders-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+        @media (max-width: 768px) {
+            .stats-bar { grid-template-columns: 1fr; }
+            .orders-grid { grid-template-columns: 1fr; }
+            .status-display { flex-direction: column; gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="refresh-indicator" id="refreshIndicator">🔄 自动刷新中...</div>
+    
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>📋 订单管理中心</h1>
+            <p>榕韵亲子定制 · 三坊七巷店</p>
+            <div class="status-display" id="statusDisplay">
+                <span>连接状态：检查中...</span>
+                <div class="auto-refresh">
+                    <label>自动刷新:</label>
+                    <input type="number" id="refreshInterval" value="5" min="1" max="60">
+                    <span>秒</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat-card stat-total" onclick="setFilter('all')">
+                <div class="stat-label">📊 全部订单</div>
+                <div class="stat-number" id="totalOrders">0</div>
+            </div>
+            <div class="stat-card stat-pending" onclick="setFilter('待制作')">
+                <div class="stat-label">⏳ 待制作</div>
+                <div class="stat-number" id="pendingOrders">0</div>
+            </div>
+            <div class="stat-card stat-completed" onclick="setFilter('已制作')">
+                <div class="stat-label">✅ 已完成</div>
+                <div class="stat-number" id="completedOrders">0</div>
+            </div>
+        </div>
+
+        <div class="filter-bar">
+            <label><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"> 全选</label>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="搜索姓名、手机号或取件码..." oninput="applyFilters()">
+            </div>
+            <select id="statusFilter" class="status-filter" onchange="applyFilters()">
+                <option value="all">全部状态</option>
+                <option value="待制作">待制作</option>
+                <option value="已制作">已制作</option>
+            </select>
+            <label><input type="checkbox" id="showCompletedOnly" onchange="applyFilters()"> 批量操作已标记</label>
+        </div>
+
+        <div class="action-bar">
+            <button class="btn btn-danger" onclick="deleteSelected()">🗑️ 批量删除</button>
+            <button class="btn btn-primary" onclick="refreshOrders()">🔄 刷新订单</button>
+            <button class="btn btn-primary" onclick="exportSelectedDesigns()">📦 批量导出设计图</button>
+        </div>
+
+        <div class="orders-grid" id="ordersGrid">
+            <div class="no-orders">
+                <div class="no-orders-icon">🎨</div>
+                <div>暂无订单，快开始营业吧！</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="image-modal" id="imageModal" onclick="if(event.target === this || event.target.classList.contains('image-modal-close')) closeImageModal()">
+        <div class="image-modal-close" onclick="closeImageModal()">✕</div>
+        <img id="modalImage" src="" alt="设计图">
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://mmfovpkrzodkvnokauqy.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_LYvf6FRSMSZRc9lfFIKOnA_XG7InVYt';
+        
+        let supabaseClient = null;
+        let currentOrders = [];
+        let selectedOrders = new Set();
+        let currentFilter = 'all';
+        let autoRefreshInterval = null;
+        
+        function setStatus(text, ok) {
+            const statusEl = document.getElementById('statusDisplay').querySelector('span');
+            statusEl.textContent = text;
+            statusEl.className = ok ? 'status-connected' : 'status-error';
+        }
+        
+        async function initSupabase() {
+            try {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                setStatus('连接状态：✅ 已连接', true);
+                
+                await loadOrders();
+                startAutoRefresh();
+            } catch (e) {
+                console.error('初始化失败:', e);
+                setStatus('连接状态：❌ 失败', false);
+            }
+        }
+        
+        function showRefreshIndicator() {
+            const indicator = document.getElementById('refreshIndicator');
+            indicator.classList.add('show');
+            setTimeout(() => indicator.classList.remove('show'), 1000);
+        }
+        
+        async function loadOrders() {
+            if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('orders')
+                    .select('*')
+                    .order('order_no', { ascending: false });
+                
+                if (error) {
+                    console.error('加载失败:', error);
+                    return;
+                }
+                currentOrders = data || [];
+                updateStats(currentOrders);
+                renderOrders(currentOrders);
+            } catch (e) {
+                console.error('加载异常:', e);
+            }
+        }
+        
+        function refreshOrders() {
+            showRefreshIndicator();
+            loadOrders();
+        }
+        
+        function startAutoRefresh() {
+            const intervalInput = document.getElementById('refreshInterval');
+            const interval = parseInt(intervalInput.value) * 1000;
+            
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            
+            autoRefreshInterval = setInterval(() => {
+                refreshOrders();
+            }, interval);
+        }
+        
+        document.getElementById('refreshInterval').addEventListener('change', startAutoRefresh);
+        
+        function updateStats(orders) {
+            const total = orders.length;
+            const pending = orders.filter(o => o.status === '待制作' || !o.status).length;
+            const completed = orders.filter(o => o.status === '已制作').length;
+
+            document.getElementById('totalOrders').textContent = total;
+            document.getElementById('pendingOrders').textContent = pending;
+            document.getElementById('completedOrders').textContent = completed;
+        }
+        
+        function setFilter(status) {
+            currentFilter = status;
+            document.getElementById('statusFilter').value = status;
+            applyFilters();
+        }
+        
+        function applyFilters() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const showCompletedOnly = document.getElementById('showCompletedOnly').checked;
+            
+            let filtered = currentOrders;
+            
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(o => {
+                    if (statusFilter === '待制作') return o.status === '待制作' || !o.status;
+                    return o.status === statusFilter;
+                });
+            }
+            
+            if (search) {
+                filtered = filtered.filter(o => 
+                    (o.name && o.name.toLowerCase().includes(search)) ||
+                    (o.phone && o.phone.includes(search)) ||
+                    (o.pickup_code && o.pickup_code.includes(search)) ||
+                    (o.order_no && String(o.order_no).includes(search))
+                );
+            }
+            
+            if (showCompletedOnly) {
+                filtered = filtered.filter(o => selectedOrders.has(o.id));
+            }
+            
+            renderOrders(filtered);
+        }
+        
+        function renderOrders(orders) {
+            const grid = document.getElementById('ordersGrid');
+            
+            if (orders.length === 0) {
+                grid.innerHTML = `
+                    <div class="no-orders">
+                        <div class="no-orders-icon">🎨</div>
+                        <div>暂无订单，快开始营业吧！</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            grid.innerHTML = orders.map(order => {
+                const isPending = order.status === '待制作' || !order.status;
+                const statusClass = isPending ? 'status-pending' : 'status-completed';
+                const statusText = isPending ? '待制作' : '已制作';
+                const isChecked = selectedOrders.has(order.id);
+                
+                return `
+                    <div class="order-card">
+                        <input type="checkbox" class="order-checkbox" ${isChecked ? 'checked' : ''} 
+                            onchange="toggleOrderSelection(${order.id}, this.checked)">
+                        <div class="order-header">
+                            <div class="order-no">#${order.order_no}</div>
+                            <div class="order-status ${statusClass}">${statusText}</div>
+                        </div>
+                        ${order.pickup_code ? `
+                        <div class="order-pickup" onclick="copyPickupCode('${order.pickup_code}')">
+                            <div class="label">取件码</div>
+                            <div class="code">${order.pickup_code}</div>
+                            <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 4px;">点击复制</div>
+                        </div>
+                        ` : ''}
+                        <div class="order-info">
+                            <div><strong>姓名:</strong> ${order.name || ''}</div>
+                            <div><strong>手机:</strong> ${order.phone || ''}</div>
+                            <div><strong>下单时间:</strong> ${formatTime(order.time || order.created_at)}</div>
+                        </div>
+                        ${order.design ? `
+                        <div class="order-design" onclick="openImageModal('${order.design}')">
+                            <img src="${order.design}" alt="设计图">
+                        </div>
+                        ` : ''}
+                        <div class="order-actions">
+                            ${isPending ? `
+                                <button class="btn btn-primary" onclick="markComplete(${order.id}, ${order.order_no})">✅ 标记完成</button>
+                            ` : `
+                                <button class="btn btn-secondary" onclick="markPending(${order.id}, ${order.order_no})">⏳ 恢复待制作</button>
+                            `}
+                            <button class="btn btn-danger" onclick="deleteOrder(${order.id}, ${order.order_no})">🗑️ 删除</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function formatTime(timeStr) {
+            if (!timeStr) return '';
+            if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(timeStr)) return timeStr;
+            try {
+                const date = new Date(timeStr);
+                if (isNaN(date.getTime())) return timeStr;
+                return date.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }).replace(/\//g, '-');
+            } catch {
+                return timeStr;
+            }
+        }
+        
+        function toggleOrderSelection(orderId, checked) {
+            if (checked) selectedOrders.add(orderId);
+            else selectedOrders.delete(orderId);
+        }
+        
+        function toggleSelectAll() {
+            const checkboxes = document.querySelectorAll('.order-checkbox');
+            const selectAll = document.getElementById('selectAll').checked;
+            
+            checkboxes.forEach(cb => {
+                const orderId = parseInt(cb.closest('.order-card').querySelector('.order-no').textContent.replace('#', ''));
+                cb.checked = selectAll;
+            });
+        }
+        
+        async function markComplete(orderId, orderNo) {
+            if (!supabaseClient) return;
+            try {
+                const { error } = await supabaseClient
+                    .from('orders')
+                    .update({ status: '已制作' })
+                    .eq('id', orderId);
+                
+                if (!error) {
+                    showToast('✅ 订单已标记完成');
+                    loadOrders();
+                }
+            } catch (e) {
+                console.error('标记失败:', e);
+            }
+        }
+        
+        async function markPending(orderId, orderNo) {
+            if (!supabaseClient) return;
+            try {
+                const { error } = await supabaseClient
+                    .from('orders')
+                    .update({ status: '待制作' })
+                    .eq('id', orderId);
+                
+                if (!error) {
+                    showToast('⏳ 订单已恢复待制作');
+                    loadOrders();
+                }
+            } catch (e) {
+                console.error('恢复失败:', e);
+            }
+        }
+        
+        async function deleteOrder(orderId, orderNo) {
+            if (!confirm(`确定要删除订单 #${orderNo} 吗？`)) return;
+            if (!supabaseClient) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('orders')
+                    .delete()
+                    .eq('id', orderId);
+                
+                if (!error) {
+                    showToast('🗑️ 订单已删除');
+                    loadOrders();
+                }
+            } catch (e) {
+                console.error('删除失败:', e);
+            }
+        }
+        
+        async function deleteSelected() {
+            if (selectedOrders.size === 0) {
+                showToast('请先选择要删除的订单');
+                return;
+            }
+            if (!confirm(`确定要删除选中的 ${selectedOrders.size} 个订单吗？`)) return;
+            if (!supabaseClient) return;
+            
+            try {
+                const ids = Array.from(selectedOrders);
+                for (const id of ids) {
+                    await supabaseClient.from('orders').delete().eq('id', id);
+                }
+                selectedOrders.clear();
+                showToast('🗑️ 已删除选中订单');
+                loadOrders();
+            } catch (e) {
+                console.error('删除失败:', e);
+            }
+        }
+        
+        function copyPickupCode(code) {
+            navigator.clipboard.writeText(code).then(() => {
+                showToast('✅ 取件码已复制');
+            });
+        }
+        
+        function openImageModal(designUrl) {
+            document.getElementById('modalImage').src = designUrl;
+            document.getElementById('imageModal').classList.add('active');
+        }
+        
+        function closeImageModal() {
+            document.getElementById('imageModal').classList.remove('active');
+        }
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeImageModal();
+        });
+        
+        async function exportSelectedDesigns() {
+            const ordersToExport = currentOrders.filter(o => selectedOrders.has(o.id) && o.design);
+            if (ordersToExport.length === 0) {
+                showToast('请先选择有设计图的订单');
+                return;
+            }
+            
+            const zip = new JSZip();
+            
+            try {
+                for (const order of ordersToExport) {
+                    const response = await fetch(order.design);
+                    const blob = await response.blob();
+                    zip.file(`order_${order.order_no}.png`, blob);
+                }
+                
+                const content = await zip.generateAsync({ type: 'blob' });
+                saveAs(content, `榕韵亲子设计图_${Date.now()}.zip`);
+                showToast(`✅ 已导出 ${ordersToExport.length} 张设计图`);
+            } catch (e) {
+                console.error('导出失败:', e);
+                showToast('❌ 导出失败');
+            }
+        }
+        
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #333;
+                color: white;
+                padding: 12px 24px;
+                border-radius: 30px;
+                font-size: 0.95rem;
+                z-index: 10000;
+                animation: fadeInUp 0.3s ease;
+            `;
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+        
+        initSupabase();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1974 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>榕韵亲子定制 | 桌面端自助设计</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&family=Ma+Shan+Zheng&family=ZCOOL+KuaiLe&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2?v=20240526005"></script>
+    <script src="standalone/data/imageData.js?v=20240526006"></script>
+    <style>
+        :root {
+            --bg: #f5f0e8;
+            --panel-bg: #fffdf7;
+            --border: #e0d5c1;
+            --text: #3d2b1a;
+            --text-light: #6b5d4f;
+            --accent: #b84a3c;
+            --accent-hover: #9a3d31;
+            --green: #5a8a6e;
+            --gold: #c9a96e;
+            --shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+            --radius: 10px;
+            --radius-sm: 6px;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-serif: 'Noto Serif SC', 'STSong', 'SimSun', serif;
+            --font-sans: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            --font-hand: 'Ma Shan Zheng', 'KaiTi', cursive;
+            --font-xiaowei: 'ZCOOL XiaoWei', 'KaiTi', serif;
+            --font-kuaile: 'ZCOOL KuaiLe', 'PingFang SC', cursive;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: linear-gradient(135deg, #efe8db 0%, #e8dfcf 30%, #f2ece0 60%, #eae3d4 100%);
+            background-attachment: fixed;
+            color: var(--text);
+            min-height: 100vh;
+            user-select: none;
+            -webkit-user-select: none;
+            cursor: default;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        /* 顶部导航栏 */
+        .top-bar {
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 10px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .top-bar .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .top-bar .brand .logo-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #b84a3c, #8b3a2f);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .top-bar .brand h1 {
+            font-family: var(--font-serif);
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #4a2c14;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+        .top-bar .brand .subtitle {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        .top-bar .shop-badge {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 0.8rem;
+            color: var(--text-light);
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .top-bar .shop-badge span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+        .top-bar .quick-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .btn-sm {
+            padding: 7px 14px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: #fff;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-family: var(--font-sans);
+            transition: var(--transition);
+            white-space: nowrap;
+            color: var(--text);
+        }
+        .btn-sm:hover {
+            background: #f9f5ec;
+            border-color: var(--gold);
+        }
+        .btn-sm.accent {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+            font-weight: 600;
+        }
+        .btn-sm.accent:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+
+        /* 主体三栏布局 */
+        .main-layout {
+            display: flex;
+            gap: 0;
+            height: calc(100vh - 130px);
+            min-height: 600px;
+            max-width: 1500px;
+            margin: 0 auto;
+            padding: 16px 20px;
+        }
+
+        /* 左侧面板 - 图案库 */
+        .left-panel {
+            width: 260px;
+            min-width: 220px;
+            background: var(--panel-bg);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .left-panel .panel-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #4a2c14;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .category-tabs-desktop {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .category-tab {
+            padding: 5px 10px;
+            border-radius: 16px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            font-size: 0.72rem;
+            transition: var(--transition);
+            white-space: nowrap;
+            background: #f8f5ee;
+            color: var(--text-light);
+            font-family: var(--font-sans);
+        }
+        .category-tab:hover {
+            background: #f0eadb;
+            border-color: #d5c8a8;
+        }
+        .category-tab.active {
+            background: #e8dcc8;
+            border-color: var(--gold);
+            color: #4a2c14;
+            font-weight: 600;
+        }
+        .pattern-grid-desktop {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            align-content: start;
+        }
+        .pattern-grid-desktop::-webkit-scrollbar {
+            width: 5px;
+        }
+        .pattern-grid-desktop::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .pattern-grid-desktop::-webkit-scrollbar-thumb {
+            background: #d5c8a8;
+            border-radius: 10px;
+        }
+        .pattern-item {
+            aspect-ratio: 1;
+            border-radius: var(--radius-sm);
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fdfbf6;
+            overflow: hidden;
+            position: relative;
+        }
+        .pattern-item:hover {
+            border-color: var(--gold);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        .pattern-item:active {
+            transform: scale(0.95);
+            transition: 0.08s;
+        }
+        .pattern-item img {
+            width: 75%;
+            height: 75%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+        .pattern-item .pattern-label {
+            position: absolute;
+            bottom: 2px;
+            font-size: 0.6rem;
+            color: var(--text-light);
+            pointer-events: none;
+            text-align: center;
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: 0 3px;
+        }
+
+        /* 中间画布区域 */
+        .center-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 500px;
+            padding: 0 20px;
+            gap: 10px;
+        }
+        .canvas-outer-wrapper {
+            position: relative;
+            background: #fff;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            transition: var(--transition);
+        }
+        .canvas-inner-frame {
+            position: relative;
+            overflow: hidden;
+            border-radius: 2px;
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+            background: #fff;
+            transition: var(--transition);
+        }
+        .canvas-inner-frame canvas {
+            display: block;
+        }
+        .canvas-label {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .canvas-label .mockup-type-indicator {
+            padding: 3px 10px;
+            border-radius: 12px;
+            background: #f0eadb;
+            font-size: 0.7rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid transparent;
+        }
+        .canvas-label .mockup-type-indicator:hover {
+            border-color: var(--gold);
+        }
+        .canvas-label .mockup-type-indicator.active {
+            background: #e8dcc8;
+            border-color: var(--gold);
+            font-weight: 600;
+        }
+
+        /* 右侧面板 - 工具 */
+        .right-panel {
+            width: 270px;
+            min-width: 240px;
+            background: var(--panel-bg);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .right-panel .panel-section {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .right-panel .panel-section:last-child {
+            border-bottom: none;
+        }
+        .right-panel .section-title {
+            font-weight: 600;
+            font-size: 0.82rem;
+            color: #4a2c14;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .right-panel textarea {
+            width: 100%;
+            height: 60px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px;
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+            resize: vertical;
+            background: #fdfbf6;
+            color: var(--text);
+            transition: var(--transition);
+        }
+        .right-panel textarea:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(201, 169, 110, 0.1);
+        }
+        .preset-phrases-desktop {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 8px;
+        }
+        .preset-chip {
+            padding: 4px 10px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            font-size: 0.7rem;
+            background: #fdfbf6;
+            transition: var(--transition);
+            white-space: nowrap;
+            font-family: var(--font-sans);
+        }
+        .preset-chip:hover {
+            background: #f0eadb;
+            border-color: var(--gold);
+        }
+        .font-controls-desktop {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .font-controls-desktop select,
+        .font-controls-desktop input[type="color"] {
+            width: 100%;
+            padding: 7px 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-sans);
+            font-size: 0.8rem;
+            background: #fdfbf6;
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text);
+        }
+        .font-controls-desktop select:focus,
+        .font-controls-desktop input[type="color"]:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+        .font-controls-desktop input[type="color"] {
+            height: 36px;
+            padding: 3px 8px;
+        }
+        .btn-full {
+            width: 100%;
+            padding: 9px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-family: var(--font-sans);
+            transition: var(--transition);
+            background: #fff;
+            color: var(--text);
+            font-weight: 500;
+        }
+        .btn-full:hover {
+            background: #f9f5ec;
+            border-color: var(--gold);
+        }
+        .btn-full.primary-action {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .btn-full.primary-action:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+        .btn-full.green-action {
+            background: var(--green);
+            color: #fff;
+            border-color: var(--green);
+            font-weight: 600;
+        }
+        .btn-full.green-action:hover {
+            background: #4a7a5e;
+            border-color: #4a7a5e;
+        }
+
+        /* 底部状态栏 */
+        .bottom-status-bar {
+            background: var(--panel-bg);
+            border-top: 1px solid var(--border);
+            padding: 8px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.75rem;
+            color: var(--text-light);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .bottom-status-bar .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #5a8a6e;
+            flex-shrink: 0;
+        }
+        .bottom-status-bar kbd {
+            background: #f0eadb;
+            padding: 2px 7px;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            border: 1px solid #d5c8a8;
+            font-family: inherit;
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+        .toast-msg {
+            padding: 10px 20px;
+            border-radius: 24px;
+            background: #3d2b1a;
+            color: #fff;
+            font-size: 0.85rem;
+            animation: toastIn 0.35s ease-out, toastOut 0.35s ease-in forwards;
+            animation-delay: 0s, 1.8s;
+            pointer-events: auto;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            white-space: nowrap;
+            font-family: var(--font-sans);
+        }
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @keyframes toastOut {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-16px);
+            }
+        }
+
+        /* 模态框 */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        .modal-dialog {
+            background: #fffdf7;
+            border-radius: 14px;
+            padding: 24px;
+            width: 440px;
+            max-width: 92vw;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+        }
+        .modal-dialog .modal-close-btn {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: #f0eadb;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b5d4f;
+        }
+        .modal-dialog .modal-close-btn:hover {
+            background: #e0d5c1;
+            color: #3d2b1a;
+        }
+        .modal-dialog h3 {
+            font-family: var(--font-serif);
+            font-size: 1.1rem;
+            margin-bottom: 16px;
+            color: #4a2c14;
+        }
+        .modal-dialog .form-group {
+            margin-bottom: 12px;
+        }
+        .modal-dialog .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: #4a2c14;
+        }
+        .modal-dialog .form-group input {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+            background: #fdfbf6;
+            transition: var(--transition);
+            color: var(--text);
+        }
+        .modal-dialog .form-group input:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(201, 169, 110, 0.1);
+        }
+        .modal-dialog .form-group input[readonly] {
+            background: #f5f0e8;
+            color: #8a7a65;
+            cursor: default;
+        }
+        .order-preview-img {
+            width: 100%;
+            border-radius: var(--radius-sm);
+            margin: 10px 0;
+            border: 1px solid var(--border);
+        }
+        .pickup-code-box {
+            background: #b84a3c;
+            color: #fff;
+            padding: 14px;
+            border-radius: 12px;
+            text-align: center;
+            margin-top: 12px;
+        }
+        .pickup-code-box .pickup-label {
+            font-size: 0.75rem;
+            margin-bottom: 4px;
+            opacity: 0.9;
+        }
+        .pickup-code-box .pickup-code {
+            font-size: 1.6rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+        }
+        .pickup-code-box .copy-btn {
+            margin-top: 8px;
+            padding: 6px 18px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            color: #fff;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: var(--font-sans);
+        }
+        .pickup-code-box .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* 预览模态 */
+        .preview-modal-content {
+            text-align: center;
+        }
+        .preview-modal-content img {
+            max-width: 100%;
+            max-height: 60vh;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        /* 右键菜单 */
+        .context-menu-desktop {
+            position: fixed;
+            z-index: 3000;
+            background: #fffdf7;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            padding: 4px 0;
+            min-width: 150px;
+            display: none;
+        }
+        .context-menu-desktop .ctx-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-sans);
+        }
+        .context-menu-desktop .ctx-item:hover {
+            background: #f9f5ec;
+        }
+        .context-menu-desktop .ctx-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 4px 0;
+        }
+
+        /* 响应式 */
+        @media (max-width: 1100px) {
+            .main-layout {
+                flex-direction: column;
+                height: auto;
+                min-height: auto;
+                padding: 10px;
+            }
+            .left-panel {
+                width: 100%;
+                min-width: auto;
+                max-height: 200px;
+                flex-shrink: 0;
+            }
+            .center-panel {
+                min-width: auto;
+                padding: 10px 0;
+            }
+            .right-panel {
+                width: 100%;
+                min-width: auto;
+                max-height: 350px;
+            }
+            .canvas-outer-wrapper {
+                padding: 8px;
+            }
+            .pattern-grid-desktop {
+                grid-template-columns: repeat(6, 1fr);
+                max-height: 120px;
+            }
+        }
+        @media (max-width: 700px) {
+            .top-bar {
+                padding: 8px 12px;
+                gap: 8px;
+            }
+            .top-bar .brand h1 {
+                font-size: 1rem;
+            }
+            .top-bar .shop-badge {
+                font-size: 0.7rem;
+                gap: 6px;
+            }
+            .pattern-grid-desktop {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 4px;
+            }
+            .canvas-outer-wrapper {
+                padding: 4px;
+                border-radius: 6px;
+            }
+            .modal-dialog {
+                width: 95vw;
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 顶部导航栏 -->
+    <header class="top-bar">
+        <div class="brand">
+            <div class="logo-icon">🌿</div>
+            <div>
+                <h1>榕韵亲子定制</h1>
+                <div class="subtitle">福州文旅 · 自助设计 · 即印即得</div>
+            </div>
+        </div>
+        <div class="shop-badge">
+            <span>🕘 09:00-21:00</span>
+            <span>📍 三坊七巷主街</span>
+            <span>📞 138-0000-0000</span>
+        </div>
+        <div class="quick-actions">
+            <button class="btn-sm" id="btnUndo" title="撤销 (Ctrl+Z)">↩️ 撤销</button>
+            <button class="btn-sm" id="btnDelete" title="删除选中 (Delete)">🗑️ 删除</button>
+            <button class="btn-sm" id="btnZoomIn" title="放大画布">➕ 放大</button>
+            <button class="btn-sm" id="btnZoomOut" title="缩小画布">➖ 缩小</button>
+            <button class="btn-sm" id="btnResetZoom" title="重置缩放">🔄 重置</button>
+            <button class="btn-sm accent" id="btnPreviewTop" title="预览设计">👁️ 预览</button>
+            <button class="btn-sm accent" id="btnOrderTop" style="background:#5a8a6e;border-color:#5a8a6e;">✅ 下单</button>
+        </div>
+    </header>
+
+    <!-- 主体三栏布局 -->
+    <div class="main-layout">
+        <!-- 左侧面板 - 图案库 -->
+        <aside class="left-panel" id="leftPanel">
+            <div class="panel-header">🎨 图案素材库</div>
+            <div class="category-tabs-desktop" id="categoryTabsDesktop"></div>
+            <div class="pattern-grid-desktop" id="patternGridDesktop"></div>
+        </aside>
+
+        <!-- 中间画布区域 -->
+        <main class="center-panel" id="centerPanel">
+            <div class="canvas-outer-wrapper" id="canvasOuterWrapper">
+                <div class="canvas-inner-frame" id="canvasInnerFrame">
+                    <canvas id="designCanvas"></canvas>
+                </div>
+            </div>
+            <div class="canvas-label">
+                <span>🖱️ 拖拽移动 · 滚轮缩放 · 点击选择 · 双击编辑文字</span>
+                <span class="mockup-type-indicator active" id="mockupIndicatorPostcard" data-type="postcard" title="明信片模式">📬 明信片</span>
+                <span class="mockup-type-indicator" id="mockupIndicatorTote" data-type="tote" title="帆布袋模式">🛍️ 帆布袋</span>
+            </div>
+        </main>
+
+        <!-- 右侧面板 - 文字工具 -->
+        <aside class="right-panel" id="rightPanel">
+            <div class="panel-section">
+                <div class="section-title">✍️ 添加文字</div>
+                <textarea id="userTextInput" placeholder="输入祝福语或文字内容..."></textarea>
+                <div class="preset-phrases-desktop" id="presetPhrasesDesktop"></div>
+            </div>
+            <div class="panel-section">
+                <div class="section-title">🎨 文字样式</div>
+                <div class="font-controls-desktop">
+                    <select id="fontFamilySelect">
+                        <option value="'Noto Serif SC', serif">思源宋体</option>
+                        <option value="'Noto Sans SC', sans-serif">思源黑体</option>
+                        <option value="'Ma Shan Zheng', cursive">马善政手写</option>
+                        <option value="'ZCOOL XiaoWei', serif">小薇手写</option>
+                        <option value="'ZCOOL KuaiLe', cursive">快乐字体</option>
+                        <option value="'KaiTi', 'STKaiti', serif">楷体</option>
+                        <option value="'FangSong', 'STFangsong', serif">仿宋</option>
+                    </select>
+                    <select id="fontSizeSelect">
+                        <option value="18">小号 (18px)</option>
+                        <option value="26">中小 (26px)</option>
+                        <option value="34" selected>中号 (34px)</option>
+                        <option value="44">中大 (44px)</option>
+                        <option value="56">大号 (56px)</option>
+                        <option value="72">特大 (72px)</option>
+                    </select>
+                    <label style="font-size:0.75rem;color:#6b5d4f;display:flex;align-items:center;gap:6px;">
+                        文字颜色 <input type="color" id="textColorPicker" value="#4a2c14" style="width:40px;height:28px;padding:2px;">
+                    </label>
+                </div>
+                <button class="btn-full primary-action" id="addTextBtn" style="margin-top:10px;">✍️ 添加到画布</button>
+            </div>
+            <div class="panel-section">
+                <div class="section-title">🖼️ 画布设置</div>
+                <select id="bgColorSelect" style="width:100%;padding:8px 10px;border:1px solid #e0d5c1;border-radius:6px;font-family:inherit;font-size:0.82rem;cursor:pointer;background:#fdfbf6;">
+                    <option value="#ffffff">纯白底色</option>
+                    <option value="#fffdf5">米黄宣纸</option>
+                    <option value="#f5f0e6">暖黄怀旧</option>
+                    <option value="#eef5ee">茉莉淡绿</option>
+                    <option value="#fdf6f0">浅粉暖调</option>
+                    <option value="#f0f4f8">淡蓝清雅</option>
+                </select>
+                <button class="btn-full" id="btnClearCanvas" style="margin-top:8px;color:#b84a3c;">🗑️ 清空画布</button>
+            </div>
+            <div class="panel-section">
+                <div class="section-title">📋 快捷操作</div>
+                <button class="btn-full green-action" id="btnQuickOrder" style="margin-bottom:6px;">✅ 提交订单</button>
+                <button class="btn-full" id="btnDownloadPreview">💾 导出预览图</button>
+            </div>
+        </aside>
+    </div>
+
+    <!-- 底部状态栏 -->
+    <footer class="bottom-status-bar">
+        <span class="status-dot"></span>
+        <span>画布对象: <strong id="objectCount">0</strong></span>
+        <span>|</span>
+        <span>缩放: <strong id="zoomLevel">100%</strong></span>
+        <span>|</span>
+        <span>快捷键: <kbd>Ctrl+Z</kbd> 撤销 · <kbd>Delete</kbd> 删除 · <kbd>Ctrl+C</kbd> 复制 · <kbd>滚轮</kbd> 缩放</span>
+    </footer>
+
+    <!-- Toast容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- 订单模态框 -->
+    <div class="modal-overlay" id="orderModal" style="display:none;">
+        <div class="modal-dialog">
+            <button class="modal-close-btn" id="orderModalClose">✕</button>
+            <h3>📋 确认订单</h3>
+            <div class="form-group">
+                <label>订单号</label>
+                <input type="text" id="orderNoInput" readonly>
+            </div>
+            <div class="form-group">
+                <label>姓名 <span style="color:#b84a3c;">*</span></label>
+                <input type="text" id="orderNameInput" placeholder="请输入您的姓名">
+            </div>
+            <div class="form-group">
+                <label>手机号 <span style="color:#b84a3c;">*</span></label>
+                <input type="tel" id="orderPhoneInput" placeholder="请输入手机号">
+            </div>
+            <img id="orderPreviewImage" class="order-preview-img" alt="设计预览">
+            <div id="pickupCodeDisplay" style="display:none;">
+                <div class="pickup-code-box">
+                    <div class="pickup-label">取件码</div>
+                    <div class="pickup-code" id="pickupCodeText"></div>
+                    <button class="copy-btn" id="copyPickupBtn">📋 一键复制</button>
+                </div>
+            </div>
+            <button class="btn-full green-action" id="submitOrderBtn" style="margin-top:12px;">✅ 提交订单</button>
+        </div>
+    </div>
+
+    <!-- 客服模态框 -->
+    <div class="modal-overlay" id="serviceModal" style="display:none;">
+        <div class="modal-dialog" style="text-align:center;">
+            <button class="modal-close-btn" id="serviceModalClose">✕</button>
+            <h3>💬 联系店家</h3>
+            <div style="margin:16px 0;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="180" height="180" style="border-radius:8px;">
+                    <rect width="200" height="200" fill="#fff"/>
+                    <rect x="10" y="10" width="36" height="36" fill="#333"/>
+                    <rect x="56" y="10" width="36" height="36" fill="#333"/>
+                    <rect x="102" y="10" width="36" height="36" fill="#333"/>
+                    <rect x="154" y="10" width="36" height="36" fill="#333"/>
+                    <rect x="10" y="56" width="36" height="36" fill="#333"/>
+                    <rect x="56" y="56" width="36" height="36" fill="#fff"/>
+                    <rect x="102" y="56" width="36" height="36" fill="#333"/>
+                    <rect x="154" y="56" width="36" height="36" fill="#333"/>
+                    <rect x="10" y="102" width="36" height="36" fill="#333"/>
+                    <rect x="56" y="102" width="36" height="36" fill="#333"/>
+                    <rect x="102" y="102" width="36" height="36" fill="#333"/>
+                    <rect x="154" y="102" width="36" height="36" fill="#333"/>
+                    <rect x="10" y="154" width="36" height="36" fill="#333"/>
+                    <rect x="56" y="154" width="36" height="36" fill="#333"/>
+                    <rect x="102" y="154" width="36" height="36" fill="#333"/>
+                    <rect x="154" y="154" width="36" height="36" fill="#fff"/>
+                </svg>
+            </div>
+            <p>微信扫码咨询</p>
+            <p style="color:#6b5d4f;margin-top:6px;">📞 138-0000-0000</p>
+        </div>
+    </div>
+
+    <!-- 预览模态框 -->
+    <div class="modal-overlay" id="previewModal" style="display:none;">
+        <div class="modal-dialog preview-modal-content" style="width:700px;">
+            <button class="modal-close-btn" id="previewModalClose">✕</button>
+            <h3>👁️ 设计预览</h3>
+            <img id="previewModalImage" src="" alt="预览" style="max-width:100%;max-height:55vh;">
+            <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;">
+                <button class="btn-sm" id="switchMockupInPreview">🔄 切换明信片/帆布袋</button>
+                <button class="btn-sm accent" id="downloadFromPreview">💾 下载图片</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右键菜单 -->
+    <div class="context-menu-desktop" id="contextMenuDesktop">
+        <div class="ctx-item" id="ctxDelete">🗑️ 删除</div>
+        <div class="ctx-item" id="ctxCopy">📋 复制</div>
+        <div class="ctx-divider"></div>
+        <div class="ctx-item" id="ctxBringFront">⬆️ 置于顶层</div>
+        <div class="ctx-item" id="ctxSendBack">⬇️ 置于底层</div>
+        <div class="ctx-divider"></div>
+        <div class="ctx-item" id="ctxLockToggle">🔒 锁定/解锁</div>
+    </div>
+
+    <script>
+        (function() {
+            // ==================== 图案数据 ====================
+            // 使用图画文件夹中的图片
+            const patternData = {
+                categories: [
+                    { id: 'sanfangqixiang', name: '  三坊七巷', icon: ' ' },
+                    { id: 'fuzhou', name: '🌸 福州特色', icon: '🌸' },
+                    { id: 'shangxiahang', name: '🌃 上下杭', icon: '🌃' },
+                    { id: 'xichansi', name: '🏯 西禅寺', icon: '🏯' },
+                    { id: 'landmark', name: '🏛️ 地标建筑', icon: '🏛️' },
+                ],
+                patterns: []
+            };
+            
+            // 从外部imageData.js加载图片数据
+            function loadImageData() {
+                console.log('开始加载图片数据...');
+                console.log('imageData是否存在:', typeof imageData !== 'undefined');
+                
+                if (typeof imageData !== 'undefined') {
+                    console.log('imageData中的键:', Object.keys(imageData));
+                    
+                    // 三坊七巷分类
+                    const sanfangqixiang = ['爱心树', '林则徐纪念馆', '马鞍墙', '南门街'];
+                    sanfangqixiang.forEach((name, i) => {
+                        if (imageData[name]) {
+                            console.log('添加图案:', name);
+                            patternData.patterns.push({
+                                id: 'sq_' + i,
+                                category: 'sanfangqixiang',
+                                name: name,
+                                dataUrl: imageData[name]
+                            });
+                        } else {
+                            console.log('未找到图片:', name);
+                        }
+                    });
+                    
+                    // 福州特色分类
+                    const fuzhou = ['福', '古厝飞檐', '红墙', '流苏', '茉莉花', '茉莉花1', '茉莉花2', '鱼丸', '州'];
+                    fuzhou.forEach((name, i) => {
+                        if (imageData[name]) {
+                            console.log('添加图案:', name);
+                            patternData.patterns.push({
+                                id: 'fz_' + i,
+                                category: 'fuzhou',
+                                name: name,
+                                dataUrl: imageData[name]
+                            });
+                        } else {
+                            console.log('未找到图片:', name);
+                        }
+                    });
+                    
+                    // 上下杭分类
+                    const shangxiahang = ['上下杭', '夜景'];
+                    shangxiahang.forEach((name, i) => {
+                        if (imageData[name]) {
+                            console.log('添加图案:', name);
+                            patternData.patterns.push({
+                                id: 'sxh_' + i,
+                                category: 'shangxiahang',
+                                name: name,
+                                dataUrl: imageData[name]
+                            });
+                        } else {
+                            console.log('未找到图片:', name);
+                        }
+                    });
+                    
+                    // 西禅寺分类
+                    const xichansi = ['西禅寺'];
+                    xichansi.forEach((name, i) => {
+                        if (imageData[name]) {
+                            console.log('添加图案:', name);
+                            patternData.patterns.push({
+                                id: 'xcs_' + i,
+                                category: 'xichansi',
+                                name: name,
+                                dataUrl: imageData[name]
+                            });
+                        } else {
+                            console.log('未找到图片:', name);
+                        }
+                    });
+                    
+                    // 地标建筑分类
+                    const landmark = ['白塔', '乌塔', '五一广场', '镇海楼'];
+                    landmark.forEach((name, i) => {
+                        if (imageData[name]) {
+                            console.log('添加图案:', name);
+                            patternData.patterns.push({
+                                id: 'lm_' + i,
+                                category: 'landmark',
+                                name: name,
+                                dataUrl: imageData[name]
+                            });
+                        } else {
+                            console.log('未找到图片:', name);
+                        }
+                    });
+                    
+                    console.log('加载完成，共', patternData.patterns.length, '个图案');
+                }
+            }
+            
+            // ==================== Supabase配置 ====================
+            var STORAGE_KEY = 'diy_orders';
+            var SUPABASE_CONFIG_KEY = 'supabase_config';
+            var supabaseClient = null;
+            var supabaseEnabled = false;
+            
+            function initSupabase() {
+                // 预置配置 - 用户的Supabase信息
+                var DEFAULT_URL = 'https://mmfovpkrzodkvnokauqy.supabase.co';
+                var DEFAULT_KEY = 'sb_publishable_LYvf6FRSMSZRc9lfFIKOnA_XG7InVYt';
+                
+                // 强制使用默认值
+                localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify({
+                    url: DEFAULT_URL,
+                    key: DEFAULT_KEY
+                }));
+                
+                // 直接连接
+                connectSupabase(DEFAULT_URL, DEFAULT_KEY);
+            }
+            
+            function connectSupabase(url, key) {
+                try {
+                    supabaseClient = window.supabase.createClient(url, key);
+                    supabaseEnabled = true;
+                    console.log('✅ Supabase 初始化成功！');
+                    showToast('云端连接成功！');
+                    return true;
+                } catch (e) {
+                    console.error('❌ Supabase 初始化失败:', e);
+                    supabaseEnabled = false;
+                    showToast('云端连接失败！');
+                    return false;
+                }
+            }
+            
+            async function saveOrderToCloud(orderData) {
+                console.log('========== 保存订单到云端 ==========');
+                console.log('订单号:', orderData.orderNo);
+                console.log('姓名:', orderData.name);
+                console.log('手机:', orderData.phone);
+                
+                if (!supabaseEnabled) {
+                    console.log('❌ Supabase未启用，不保存到云端');
+                    showToast('云端未连接，本地保存成功');
+                    return;
+                }
+                
+                try {
+                    console.log('正在保存到云端...');
+                    const { data, error } = await supabaseClient
+                        .from('orders')
+                        .insert([{
+                            order_no: orderData.orderNo,
+                            name: orderData.name,
+                            phone: orderData.phone,
+                            pickup_code: orderData.pickupCode,
+                            design: orderData.design,
+                            status: '待制作',
+                            time: new Date().toLocaleString()
+                        }]);
+                    
+                    if (!error) {
+                        console.log('✅ 订单已保存到云端:', orderData.orderNo);
+                        showToast('订单提交成功！');
+                    } else {
+                        console.error('❌ 保存订单到云端失败:', error);
+                        console.error('错误详情:', error.message);
+                        showToast('云端保存失败: ' + error.message);
+                    }
+                } catch (e) {
+                    console.error('❌ 保存订单到云端异常:', e);
+                    showToast('云端保存失败！');
+                }
+            }
+
+            // ==================== DOM元素 ====================
+            const designCanvas = document.getElementById('designCanvas');
+            const canvasInnerFrame = document.getElementById('canvasInnerFrame');
+            const categoryTabsDesktop = document.getElementById('categoryTabsDesktop');
+            const patternGridDesktop = document.getElementById('patternGridDesktop');
+            const userTextInput = document.getElementById('userTextInput');
+            const presetPhrasesDesktop = document.getElementById('presetPhrasesDesktop');
+            const fontFamilySelect = document.getElementById('fontFamilySelect');
+            const fontSizeSelect = document.getElementById('fontSizeSelect');
+            const textColorPicker = document.getElementById('textColorPicker');
+            const bgColorSelect = document.getElementById('bgColorSelect');
+            const addTextBtn = document.getElementById('addTextBtn');
+            const objectCountEl = document.getElementById('objectCount');
+            const zoomLevelEl = document.getElementById('zoomLevel');
+            const toastContainer = document.getElementById('toastContainer');
+            const contextMenuDesktop = document.getElementById('contextMenuDesktop');
+            const orderModal = document.getElementById('orderModal');
+            const serviceModal = document.getElementById('serviceModal');
+            const previewModal = document.getElementById('previewModal');
+
+            // ==================== 预设短语 ====================
+            const presetPhrases = [
+                '有福之州，幸福常伴',
+                '三坊七巷，古韵悠长',
+                '茉莉花开，清香自来',
+                '榕城记忆，美好永存',
+                '闽水悠悠，情谊长留',
+                '福满榕城，好运连连',
+                '亲子时光，温暖如初',
+                '愿你被世界温柔以待',
+                '福州·到此一游',
+                'Happy Day! 🎉',
+            ];
+
+            // ==================== 画布初始化 ====================
+            const canvasSizes = {
+                postcard: { width: 750, height: 480 },
+                tote: { width: 480, height: 720 }
+            };
+            let currentMockup = 'postcard';
+            const CANVAS_WIDTH = canvasSizes[currentMockup].width;
+            const CANVAS_HEIGHT = canvasSizes[currentMockup].height;
+            let currentZoom = 1;
+            const ZOOM_MIN = 0.4;
+            const ZOOM_MAX = 2.5;
+            const ZOOM_STEP = 0.08;
+
+            designCanvas.width = CANVAS_WIDTH;
+            designCanvas.height = CANVAS_HEIGHT;
+
+            const fabricCanvas = new fabric.Canvas('designCanvas', {
+                width: CANVAS_WIDTH,
+                height: CANVAS_HEIGHT,
+                backgroundColor: '#ffffff',
+                preserveObjectStacking: true,
+                selection: true,
+                stopContextMenu: true,
+                fireRightClick: true,
+                hoverCursor: 'move',
+                moveCursor: 'grabbing',
+            });
+
+            // 历史记录（用于撤销）
+            let historyStack = [];
+            const MAX_HISTORY = 40;
+
+            function saveHistory() {
+                const state = JSON.stringify(fabricCanvas.toJSON(['id', 'category', 'patternId',
+                'lockMovementX', 'lockMovementY', 'lockRotation', 'lockScalingX', 'lockScalingY',
+                'hasControls', 'hasBorders', 'selectable', 'evented'
+                ]));
+                if (historyStack.length >= MAX_HISTORY) {
+                    historyStack.shift();
+                }
+                historyStack.push(state);
+                // 如果历史栈最后两项相同则去重
+                if (historyStack.length >= 2 &&
+                    historyStack[historyStack.length - 1] === historyStack[historyStack.length - 2]) {
+                    historyStack.pop();
+                }
+            }
+
+            function undo() {
+                if (historyStack.length <= 1) {
+                    showToast('没有更多可撤销的操作');
+                    return;
+                }
+                historyStack.pop(); // 移除当前状态
+                const prevState = historyStack[historyStack.length - 1];
+                fabricCanvas.loadFromJSON(JSON.parse(prevState), () => {
+                    fabricCanvas.renderAll();
+                    updateObjectCount();
+                    showToast('已撤销 ↩️');
+                });
+            }
+
+            // 初始保存
+            saveHistory();
+
+            fabricCanvas.on('object:modified', () => {
+                saveHistory();
+                updateObjectCount();
+            });
+            fabricCanvas.on('object:added', () => {
+                saveHistory();
+                updateObjectCount();
+            });
+            fabricCanvas.on('object:removed', () => {
+                saveHistory();
+                updateObjectCount();
+            });
+
+            function updateObjectCount() {
+                const count = fabricCanvas.getObjects().length;
+                objectCountEl.textContent = count;
+            }
+
+            function updateZoomDisplay() {
+                zoomLevelEl.textContent = Math.round(currentZoom * 100) + '%';
+                canvasInnerFrame.style.transform = `scale(${currentZoom})`;
+                canvasInnerFrame.style.transformOrigin = 'center center';
+            }
+
+            function setZoom(newZoom) {
+                currentZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, newZoom));
+                currentZoom = Math.round(currentZoom * 100) / 100;
+                updateZoomDisplay();
+                fabricCanvas.setZoom(currentZoom);
+                fabricCanvas.renderAll();
+            }
+
+            function zoomIn() {
+                setZoom(currentZoom + ZOOM_STEP);
+                showToast('放大: ' + Math.round(currentZoom * 100) + '%');
+            }
+
+            function zoomOut() {
+                setZoom(currentZoom - ZOOM_STEP);
+                showToast('缩小: ' + Math.round(currentZoom * 100) + '%');
+            }
+
+            function resetZoom() {
+                setZoom(1);
+                showToast('缩放已重置');
+            }
+
+            // 初始缩放设置
+            updateZoomDisplay();
+            fabricCanvas.setZoom(currentZoom);
+
+            // ==================== Toast ====================
+            function showToast(message) {
+                const el = document.createElement('div');
+                el.className = 'toast-msg';
+                el.textContent = message;
+                toastContainer.appendChild(el);
+                setTimeout(() => {
+                    if (el.parentNode) el.parentNode.removeChild(el);
+                }, 2200);
+            }
+
+            // ==================== 图案加载 ====================
+            function createPatternSVGDataURI(svgString) {
+                const encoded = encodeURIComponent(svgString.trim());
+                return 'data:image/svg+xml,' + encoded;
+            }
+
+            function renderCategoryTabs() {
+                categoryTabsDesktop.innerHTML = '';
+                patternData.categories.forEach((cat, index) => {
+                    const tab = document.createElement('span');
+                    tab.className = 'category-tab' + (index === 0 ? ' active' : '');
+                    tab.textContent = cat.name;
+                    tab.dataset.categoryId = cat.id;
+                    tab.addEventListener('click', () => {
+                        document.querySelectorAll('.category-tab').forEach(t => t.classList
+                            .remove('active'));
+                        tab.classList.add('active');
+                        renderPatternGrid(cat.id);
+                    });
+                    categoryTabsDesktop.appendChild(tab);
+                });
+            }
+
+            function renderPatternGrid(categoryId) {
+                patternGridDesktop.innerHTML = '';
+                const filtered = patternData.patterns.filter(p => p.category === categoryId);
+                filtered.forEach(pattern => {
+                    const item = document.createElement('div');
+                    item.className = 'pattern-item';
+                    item.title = pattern.name;
+                    let dataURI;
+                    if (pattern.dataUrl) {
+                        dataURI = pattern.dataUrl;
+                    } else {
+                        dataURI = createPatternSVGDataURI(pattern.svg);
+                    }
+                    item.innerHTML = `
+                <img src="${dataURI}" alt="${pattern.name}" draggable="false">
+                <span class="pattern-label">${pattern.name}</span>
+              `;
+                    item.addEventListener('click', () => addPatternToCanvas(pattern, dataURI));
+                    // 拖拽支持
+                    item.draggable = true;
+                    item.addEventListener('dragstart', (e) => {
+                        e.dataTransfer.setData('text/plain', JSON.stringify({ patternId: pattern
+                                .id, dataURI }));
+                        item.style.opacity = '0.6';
+                    });
+                    item.addEventListener('dragend', () => {
+                        item.style.opacity = '1';
+                    });
+                    patternGridDesktop.appendChild(item);
+                });
+            }
+
+            function addPatternToCanvas(pattern, dataURI) {
+                console.log('开始添加图案:', pattern.name);
+                console.log('dataURI:', dataURI ? dataURI.substring(0, 100) + '...' : 'null');
+                
+                fabric.Image.fromURL(dataURI, (img) => {
+                    if (!img || img.width === 0 || img.height === 0) {
+                        console.error('图片加载失败或尺寸无效');
+                        showToast('图片加载失败');
+                        return;
+                    }
+                    
+                    console.log('图片加载成功:', pattern.name, '尺寸:', img.width + 'x' + img.height);
+                    console.log('当前画布尺寸:', fabricCanvas.width + 'x' + fabricCanvas.height);
+                    
+                    const maxDim = 120;
+                    let scale = 1;
+                    if (img.width > img.height) {
+                        scale = maxDim / img.width;
+                    } else {
+                        scale = maxDim / img.height;
+                    }
+                    if (scale > 1.5) scale = 1.5;
+                    
+                    const centerX = fabricCanvas.width / 2;
+                    const centerY = fabricCanvas.height / 2;
+                    
+                    img.set({
+                        left: centerX,
+                        top: centerY,
+                        originX: 'center',
+                        originY: 'center',
+                        scaleX: scale,
+                        scaleY: scale,
+                        category: pattern.category,
+                        patternId: pattern.id,
+                        hasControls: true,
+                        hasBorders: true,
+                    });
+                    
+                    fabricCanvas.add(img);
+                    fabricCanvas.setActiveObject(img);
+                    fabricCanvas.bringToFront(img);
+                    fabricCanvas.renderAll();
+                    saveHistory();
+                    updateObjectCount();
+                    
+                    console.log('对象已添加，位置:', img.left, img.top, '缩放:', img.scaleX);
+                    console.log('画布对象数量:', fabricCanvas.getObjects().length);
+                    
+                    showToast('已添加: ' + pattern.name);
+                }, { crossOrigin: 'anonymous' });
+            }
+
+            // 支持从拖放添加图案
+            canvasInnerFrame.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+            });
+            canvasInnerFrame.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const dataStr = e.dataTransfer.getData('text/plain');
+                if (!dataStr) return;
+                try {
+                    const data = JSON.parse(dataStr);
+                    const pattern = patternData.patterns.find(p => p.id === data.patternId);
+                    if (pattern) {
+                        const rect = canvasInnerFrame.getBoundingClientRect();
+                        const x = (e.clientX - rect.left) / currentZoom;
+                        const y = (e.clientY - rect.top) / currentZoom;
+                        fabric.Image.fromURL(data.dataURI, (img) => {
+                            const maxDim = 120;
+                            let scale = 1;
+                            if (img.width > img.height) scale = maxDim / img.width;
+                            else scale = maxDim / img.height;
+                            if (scale > 1.5) scale = 1.5;
+                            img.set({
+                                left: x - (img.width * scale) / 2,
+                                top: y - (img.height * scale) / 2,
+                                scaleX: scale,
+                                scaleY: scale,
+                                category: pattern.category,
+                                patternId: pattern.id,
+                                hasControls: true,
+                                hasBorders: true,
+                            });
+                            fabricCanvas.add(img);
+                            fabricCanvas.setActiveObject(img);
+                            fabricCanvas.renderAll();
+                            saveHistory();
+                            updateObjectCount();
+                            showToast('已添加: ' + pattern.name);
+                        }, { crossOrigin: 'anonymous' });
+                    }
+                } catch (err) { /* ignore */ }
+            });
+
+            // ==================== 文字工具 ====================
+            function renderPresetPhrases() {
+                presetPhrasesDesktop.innerHTML = '';
+                presetPhrases.forEach(phrase => {
+                    const chip = document.createElement('span');
+                    chip.className = 'preset-chip';
+                    chip.textContent = phrase;
+                    chip.addEventListener('click', () => {
+                        userTextInput.value = phrase;
+                        addTextToCanvas(phrase);
+                    });
+                    presetPhrasesDesktop.appendChild(chip);
+                });
+            }
+
+            function addTextToCanvas(text) {
+                if (!text || !text.trim()) {
+                    showToast('请先输入文字内容');
+                    return;
+                }
+                const fontFamily = fontFamilySelect.value;
+                const fontSize = parseInt(fontSizeSelect.value);
+                const fillColor = textColorPicker.value;
+                const currentSize = canvasSizes[currentMockup];
+                const textObj = new fabric.IText(text.trim(), {
+                    left: currentSize.width / 2 - 60,
+                    top: currentSize.height / 2 - fontSize / 2,
+                    fontFamily: fontFamily,
+                    fontSize: fontSize,
+                    fill: fillColor,
+                    editable: true,
+                    hasControls: true,
+                    hasBorders: true,
+                    lockUniScaling: true,
+                });
+                fabricCanvas.add(textObj);
+                fabricCanvas.setActiveObject(textObj);
+                fabricCanvas.renderAll();
+                saveHistory();
+                updateObjectCount();
+                showToast('文字已添加 ✍️');
+            }
+
+            addTextBtn.addEventListener('click', () => {
+                addTextToCanvas(userTextInput.value);
+            });
+
+            userTextInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    addTextToCanvas(userTextInput.value);
+                }
+            });
+
+            // ==================== 背景色 ====================
+            bgColorSelect.addEventListener('change', () => {
+                fabricCanvas.backgroundColor = bgColorSelect.value;
+                fabricCanvas.renderAll();
+                saveHistory();
+                showToast('背景色已更新');
+            });
+
+            // ==================== 按钮事件 ====================
+            document.getElementById('btnUndo').addEventListener('click', undo);
+            document.getElementById('btnDelete').addEventListener('click', () => {
+                const activeObj = fabricCanvas.getActiveObject();
+                if (activeObj) {
+                    fabricCanvas.remove(activeObj);
+                    fabricCanvas.discardActiveObject();
+                    fabricCanvas.renderAll();
+                    saveHistory();
+                    updateObjectCount();
+                    showToast('已删除选中对象 🗑️');
+                } else {
+                    showToast('请先选中要删除的对象');
+                }
+            });
+            document.getElementById('btnZoomIn').addEventListener('click', zoomIn);
+            document.getElementById('btnZoomOut').addEventListener('click', zoomOut);
+            document.getElementById('btnResetZoom').addEventListener('click', resetZoom);
+            document.getElementById('btnClearCanvas').addEventListener('click', () => {
+                if (fabricCanvas.getObjects().length === 0) {
+                    showToast('画布已为空');
+                    return;
+                }
+                if (confirm('确定要清空画布上的所有内容吗？此操作不可恢复。')) {
+                    fabricCanvas.clear();
+                    fabricCanvas.backgroundColor = bgColorSelect.value;
+                    fabricCanvas.renderAll();
+                    saveHistory();
+                    updateObjectCount();
+                    showToast('画布已清空');
+                }
+            });
+            document.getElementById('btnPreviewTop').addEventListener('click', openPreview);
+            document.getElementById('btnOrderTop').addEventListener('click', openOrderModal);
+            document.getElementById('btnQuickOrder').addEventListener('click', openOrderModal);
+            document.getElementById('btnDownloadPreview').addEventListener('click', downloadDesign);
+
+            // ==================== 预览 ====================
+            function getCanvasDataURL(format = 'png', multiplier = 2) {
+                return fabricCanvas.toDataURL({
+                    format: format,
+                    quality: 1,
+                    multiplier: multiplier,
+                });
+            }
+
+            function openPreview() {
+                const dataURL = getCanvasDataURL('png', 2);
+                document.getElementById('previewModalImage').src = dataURL;
+                previewModal.style.display = 'flex';
+            }
+
+            function switchMockupMode(mode) {
+                if (mode === currentMockup) return;
+                
+                const oldObjects = [];
+                fabricCanvas.getObjects().forEach(function(obj) {
+                    oldObjects.push({
+                        obj: obj,
+                        left: obj.left,
+                        top: obj.top
+                    });
+                });
+                
+                const oldSize = canvasSizes[currentMockup];
+                currentMockup = mode;
+                const newSize = canvasSizes[currentMockup];
+                
+                designCanvas.width = newSize.width;
+                designCanvas.height = newSize.height;
+                fabricCanvas.setWidth(newSize.width);
+                fabricCanvas.setHeight(newSize.height);
+                
+                oldObjects.forEach(function(item) {
+                    const obj = item.obj;
+                    const relPosX = item.left / oldSize.width;
+                    const relPosY = item.top / oldSize.height;
+                    obj.set({
+                        left: relPosX * newSize.width,
+                        top: relPosY * newSize.height
+                    });
+                });
+                
+                fabricCanvas.renderAll();
+                saveHistory();
+                
+                if (previewModal.style.display === 'flex') {
+                    const dataURL = getCanvasDataURL('png', 2);
+                    document.getElementById('previewModalImage').src = dataURL;
+                }
+                
+                document.getElementById('mockupIndicatorPostcard').classList.remove('active');
+                document.getElementById('mockupIndicatorTote').classList.remove('active');
+                document.getElementById('mockupIndicator' + (mode === 'postcard' ? 'Postcard' : 'Tote')).classList.add('active');
+                
+                showToast('已切换到' + (mode === 'postcard' ? '明信片' : '帆布袋') + '模式');
+            }
+
+            function downloadDesign() {
+                const dataURL = getCanvasDataURL('png', 2);
+                const link = document.createElement('a');
+                link.download = '榕韵设计_' + new Date().toISOString().slice(0, 10) + '.png';
+                link.href = dataURL;
+                link.click();
+                showToast('预览图已下载 💾');
+            }
+
+            document.getElementById('previewModalClose').addEventListener('click', () => {
+                previewModal.style.display = 'none';
+            });
+            document.getElementById('switchMockupInPreview').addEventListener('click', () => {
+                const newMode = currentMockup === 'postcard' ? 'tote' : 'postcard';
+                switchMockupMode(newMode);
+            });
+            document.getElementById('downloadFromPreview').addEventListener('click', downloadDesign);
+
+            // Mockup指示器
+            document.getElementById('mockupIndicatorPostcard').addEventListener('click', function() {
+                switchMockupMode('postcard');
+            });
+            document.getElementById('mockupIndicatorTote').addEventListener('click', function() {
+                switchMockupMode('tote');
+            });
+
+            // ==================== 订单模态框 ====================
+            function generateOrderNo() {
+                let orderCounter = parseInt(localStorage.getItem('orderCounter')) || 0;
+                orderCounter++;
+                localStorage.setItem('orderCounter', orderCounter);
+                return orderCounter; // 纯数字，保存到数据库
+            }
+
+            function generatePickupCode() {
+                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                let code = '';
+                for (let i = 0; i < 6; i++) {
+                    code += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return code;
+            }
+
+            let currentOrderNo = 0; // 保存纯数字订单号
+
+            function openOrderModal() {
+                currentOrderNo = generateOrderNo();
+                document.getElementById('orderNoInput').value = 'SY-' + currentOrderNo; // 显示时加前缀
+                document.getElementById('orderNameInput').value = '';
+                document.getElementById('orderPhoneInput').value = '';
+                document.getElementById('pickupCodeDisplay').style.display = 'none';
+                document.getElementById('orderPreviewImage').src = getCanvasDataURL('png', 2);
+                document.getElementById('submitOrderBtn').style.display = 'block';
+                orderModal.style.display = 'flex';
+            }
+
+            document.getElementById('orderModalClose').addEventListener('click', () => {
+                orderModal.style.display = 'none';
+            });
+            document.getElementById('submitOrderBtn').addEventListener('click', async () => {
+                const name = document.getElementById('orderNameInput').value.trim();
+                const phone = document.getElementById('orderPhoneInput').value.trim();
+                if (!name) { showToast('请输入姓名'); return; }
+                if (!phone || !/^1\d{10}$/.test(phone)) { showToast('请输入有效的手机号');
+                    return; }
+                const pickupCode = generatePickupCode();
+                const designData = getCanvasDataURL('png', 2);
+                
+                // 保存到云端，使用纯数字订单号
+                await saveOrderToCloud({
+                    orderNo: currentOrderNo,
+                    name: name,
+                    phone: phone,
+                    pickupCode: pickupCode,
+                    design: designData
+                });
+                
+                document.getElementById('pickupCodeText').textContent = pickupCode;
+                document.getElementById('pickupCodeDisplay').style.display = 'block';
+                document.getElementById('submitOrderBtn').style.display = 'none';
+                showToast('订单提交成功！🎉');
+            });
+            document.getElementById('copyPickupBtn').addEventListener('click', () => {
+                const code = document.getElementById('pickupCodeText').textContent;
+                navigator.clipboard.writeText(code).then(() => {
+                    showToast('取件码已复制: ' + code);
+                }).catch(() => {
+                    showToast('取件码: ' + code + ' (请手动复制)');
+                });
+            });
+
+            // ==================== 客服模态框 ====================
+            document.getElementById('btnService')?.addEventListener('click', () => {
+                serviceModal.style.display = 'flex';
+            });
+            document.getElementById('serviceModalClose').addEventListener('click', () => {
+                serviceModal.style.display = 'none';
+            });
+            // 顶部快捷服务按钮（如果存在）
+            const serviceBtnTop = document.createElement('button');
+            serviceBtnTop.className = 'btn-sm';
+            serviceBtnTop.textContent = '💬 客服';
+            serviceBtnTop.title = '联系客服';
+            serviceBtnTop.addEventListener('click', () => {
+                serviceModal.style.display = 'flex';
+            });
+            document.querySelector('.quick-actions').appendChild(serviceBtnTop);
+
+            // ==================== 右键菜单 ====================
+            fabricCanvas.on('mouse:down', (opt) => {
+                if (opt.button === 3 || (opt.button === 2 && opt.e)) {
+                    // 右键
+                    const target = fabricCanvas.findTarget(opt.e, false);
+                    if (target) {
+                        fabricCanvas.setActiveObject(target);
+                        fabricCanvas.renderAll();
+                        contextMenuDesktop.style.display = 'block';
+                        contextMenuDesktop.style.left = (opt.e.clientX || opt.e.pageX) + 'px';
+                        contextMenuDesktop.style.top = (opt.e.clientY || opt.e.pageY) + 'px';
+                        // 确保菜单不超出屏幕
+                        const menuRect = contextMenuDesktop.getBoundingClientRect();
+                        if (menuRect.right > window.innerWidth) {
+                            contextMenuDesktop.style.left = (window.innerWidth - menuRect.width - 10) +
+                                'px';
+                        }
+                        if (menuRect.bottom > window.innerHeight) {
+                            contextMenuDesktop.style.top = (window.innerHeight - menuRect.height - 10) +
+                                'px';
+                        }
+                    } else {
+                        contextMenuDesktop.style.display = 'none';
+                    }
+                } else if (opt.button === 1) {
+                    contextMenuDesktop.style.display = 'none';
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!contextMenuDesktop.contains(e.target)) {
+                    contextMenuDesktop.style.display = 'none';
+                }
+            });
+
+            document.getElementById('ctxDelete').addEventListener('click', () => {
+                const activeObj = fabricCanvas.getActiveObject();
+                if (activeObj) {
+                    fabricCanvas.remove(activeObj);
+                    fabricCanvas.discardActiveObject();
+                    fabricCanvas.renderAll();
+                    saveHistory();
+                    updateObjectCount();
+                }
+                contextMenuDesktop.style.display = 'none';
+            });
+            document.getElementById('ctxCopy').addEventListener('click', () => {
+                const activeObj = fabricCanvas.getActiveObject();
+                if (activeObj) {
+                    activeObj.clone((cloned) => {
+                        cloned.set({
+                            left: cloned.left + 20,
+                            top: cloned.top + 20,
+                        });
+                        fabricCanvas.add(cloned);
+                        fabricCanvas.setActiveObject(cloned);
+                        fabricCanvas.renderAll();
+                        saveHistory();
+                        updateObjectCount();
+                        showToast('已复制对象 📋');
+                    });
+                }
+                contextMenuDesktop.style.display = 'none';
+            });
+            document.getElementById('ctxBringFront').addEventListener('click', () => {
+                const activeObj = fabricCanvas.getActiveObject();
+                if (activeObj) {
+                    fabricCanvas.bringToFront(activeObj);
+                    fabricCanvas.renderAll();
+                    saveHistory();
+                }
+                contextMenuDesktop.style.display = 'none';
+            });
+            document.getElementById('ctxSendBack').addEventListener('click', () => {
+                const activeObj = fabricCanvas.getActiveObject();
+                if (activeObj) {
+                    fabricCanvas.sendToBack(activeObj);
+                    fabricCanvas.renderAll();
+                    saveHistory();
+                }
+                contextMenuDesktop.style.display = 'none';
+            });
+            document.getElementById('ctxLockToggle').addEventListener('click', () => {
+                const activeObj = fabricCanvas.getActiveObject();
+                if (activeObj) {
+                    const isLocked = activeObj.lockMovementX && activeObj.lockMovementY;
+                    activeObj.set({
+                        lockMovementX: !isLocked,
+                        lockMovementY: !isLocked,
+                        lockRotation: !isLocked,
+                        lockScalingX: !isLocked,
+                        lockScalingY: !isLocked,
+                        hasControls: isLocked,
+                        hasBorders: isLocked,
+                        selectable: true,
+                        evented: true,
+                    });
+                    fabricCanvas.renderAll();
+                    saveHistory();
+                    showToast(isLocked ? '已解锁 🔓' : '已锁定 🔒');
+                }
+                contextMenuDesktop.style.display = 'none';
+            });
+
+            // ==================== 键盘快捷键 ====================
+            document.addEventListener('keydown', (e) => {
+                // 如果焦点在输入框中，不处理快捷键（除了特定情况）
+                const activeEl = document.activeElement;
+                const isInputFocused = activeEl && (activeEl.tagName === 'INPUT' || activeEl
+                    .tagName === 'TEXTAREA' || activeEl.isContentEditable);
+
+                if (e.ctrlKey && e.key === 'z') {
+                    e.preventDefault();
+                    undo();
+                } else if (e.ctrlKey && e.key === 'c') {
+                    if (!isInputFocused) {
+                        const activeObj = fabricCanvas.getActiveObject();
+                        if (activeObj) {
+                            e.preventDefault();
+                            activeObj.clone((cloned) => {
+                                cloned.set({ left: cloned.left + 20, top: cloned.top +
+                                        20 });
+                                fabricCanvas.add(cloned);
+                                fabricCanvas.setActiveObject(cloned);
+                                fabricCanvas.renderAll();
+                                saveHistory();
+                                updateObjectCount();
+                                showToast('已复制 (Ctrl+C)');
+                            });
+                        }
+                    }
+                } else if (e.key === 'Delete' || e.key === 'Backspace') {
+                    if (!isInputFocused) {
+                        const activeObj = fabricCanvas.getActiveObject();
+                        if (activeObj) {
+                            e.preventDefault();
+                            fabricCanvas.remove(activeObj);
+                            fabricCanvas.discardActiveObject();
+                            fabricCanvas.renderAll();
+                            saveHistory();
+                            updateObjectCount();
+                            showToast('已删除 (Delete)');
+                        }
+                    }
+                } else if (e.ctrlKey && e.key === '=') {
+                    e.preventDefault();
+                    zoomIn();
+                } else if (e.ctrlKey && e.key === '-') {
+                    e.preventDefault();
+                    zoomOut();
+                } else if (e.ctrlKey && e.key === '0') {
+                    e.preventDefault();
+                    resetZoom();
+                }
+            });
+
+            // ==================== 鼠标滚轮缩放 ====================
+            canvasInnerFrame.addEventListener('wheel', (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    if (e.deltaY < 0) {
+                        setZoom(currentZoom + ZOOM_STEP);
+                    } else {
+                        setZoom(currentZoom - ZOOM_STEP);
+                    }
+                }
+            }, { passive: false });
+
+            // ==================== 双击编辑文字 ====================
+            fabricCanvas.on('mouse:dblclick', (opt) => {
+                const target = opt.target;
+                if (target && target.type === 'i-text') {
+                    fabricCanvas.setActiveObject(target);
+                    target.enterEditing();
+                    target.selectAll();
+                    fabricCanvas.renderAll();
+                }
+            });
+
+            // ==================== 选择变化 ====================
+            fabricCanvas.on('selection:created', updateObjectCount);
+            fabricCanvas.on('selection:updated', updateObjectCount);
+            fabricCanvas.on('selection:cleared', updateObjectCount);
+
+            // ==================== 初始化 ====================
+            function init() {
+                // 初始化Supabase
+                initSupabase();
+                loadImageData();
+                renderCategoryTabs();
+                renderPatternGrid(patternData.categories[0].id);
+                renderPresetPhrases();
+                updateObjectCount();
+                updateZoomDisplay();
+                fabricCanvas.backgroundColor = '#ffffff';
+                fabricCanvas.renderAll();
+                saveHistory();
+                // 添加初始示例文字
+                setTimeout(() => {
+                    const sampleText = new fabric.IText('🌿 有福之州', {
+                        left: 30,
+                        top: 30,
+                        fontFamily: "'Noto Serif SC', serif",
+                        fontSize: 24,
+                        fill: '#4a2c14',
+                        editable: true,
+                        hasControls: true,
+                        hasBorders: true,
+                    });
+                    fabricCanvas.add(sampleText);
+                    fabricCanvas.renderAll();
+                    saveHistory();
+                    updateObjectCount();
+                }, 300);
+                console.log('  图案总数: ' + patternData.patterns.length + ' 个');
+            }
+
+            // 等待imageData.js加载后初始化
+            if (typeof imageData !== 'undefined') {
+                init();
+            } else {
+                window.addEventListener('load', init);
+            }
+            console.log('🌿 榕韵亲子定制 - 桌面端已就绪');
+            console.log('  画布: ' + CANVAS_WIDTH + 'x' + CANVAS_HEIGHT);
+            console.log('  图案分类: ' + patternData.categories.length + ' 个');
+            console.log('  图案总数: ' + patternData.patterns.length + ' 个');
+            console.log('  快捷键: Ctrl+Z 撤销 | Delete 删除 | Ctrl+C 复制 | 滚轮缩放');
+            console.log('  右键点击对象打开上下文菜单');
+            console.log('  拖拽图案到画布或点击添加');
+            console.log('  双击文字对象可编辑');
+
+        })();
+    </script>
+</body>
+</html>
