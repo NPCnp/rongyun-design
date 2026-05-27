@@ -349,7 +349,7 @@
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="搜索姓名、手机号或取件码..." oninput="applyFilters()">
             </div>
-            <select id="statusFilter" class="status-filter" onchange="applyFilters()">
+            <select id="statusFilter" class="status-filter" onchange="currentFilter = this.value; localStorage.setItem('adminFilter', currentFilter); applyFilters()">
                 <option value="all">全部状态</option>
                 <option value="待制作">待制作</option>
                 <option value="已制作">已制作</option>
@@ -383,7 +383,7 @@
         let supabaseClient = null;
         let currentOrders = [];
         let selectedOrders = new Set();
-        let currentFilter = 'all';
+        let currentFilter = localStorage.getItem('adminFilter') || 'all';
         let autoRefreshInterval = null;
         
         function setStatus(text, ok) {
@@ -425,7 +425,8 @@
                 }
                 currentOrders = data || [];
                 updateStats(currentOrders);
-                renderOrders(currentOrders);
+                document.getElementById('statusFilter').value = currentFilter;
+                applyFilters();
             } catch (e) {
                 console.error('加载异常:', e);
             }
@@ -461,13 +462,15 @@
         
         function setFilter(status) {
             currentFilter = status;
+            localStorage.setItem('adminFilter', status);
             document.getElementById('statusFilter').value = status;
             applyFilters();
         }
         
         function applyFilters() {
             const search = document.getElementById('searchInput').value.toLowerCase();
-            const statusFilter = document.getElementById('statusFilter').value;
+            const statusFilter = currentFilter;
+            document.getElementById('statusFilter').value = currentFilter;
             const showCompletedOnly = document.getElementById('showCompletedOnly').checked;
             
             let filtered = currentOrders;
