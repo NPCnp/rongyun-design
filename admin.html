@@ -517,12 +517,30 @@
                 const statusText = isPending ? '待制作' : '已制作';
                 const isChecked = selectedOrders.has(order.id);
                 
+                // 格式化订单号：手机订单显示为 M001，电脑订单显示为 P001（如果device_type存在）
+                let displayOrderNo;
+                if (order.device_type === 'mobile') {
+                    displayOrderNo = 'M' + String(order.order_no).padStart(3, '0');
+                } else if (order.device_type === 'desktop') {
+                    displayOrderNo = 'P' + String(order.order_no).padStart(3, '0');
+                } else {
+                    displayOrderNo = order.order_no;
+                }
+                
+                // 设备类型显示
+                let deviceLabel = '';
+                if (order.device_type === 'mobile') {
+                    deviceLabel = '<span style="color: #2196F3; font-size: 0.75rem; margin-left: 8px;">📱 手机</span>';
+                } else if (order.device_type === 'desktop') {
+                    deviceLabel = '<span style="color: #9C27B0; font-size: 0.75rem; margin-left: 8px;">💻 电脑</span>';
+                }
+                
                 return `
                     <div class="order-card">
                         <input type="checkbox" class="order-checkbox" ${isChecked ? 'checked' : ''} 
                             onchange="toggleOrderSelection(${order.id}, this.checked)">
                         <div class="order-header">
-                            <div class="order-no">#${order.order_no}</div>
+                            <div class="order-no">#${displayOrderNo}${deviceLabel}</div>
                             <div class="order-status ${statusClass}">${statusText}</div>
                         </div>
                         ${order.pickup_code ? `
