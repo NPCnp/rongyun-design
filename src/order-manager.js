@@ -2,12 +2,12 @@ var supabase = null;
 var supabaseEnabled = false;
 
 function initSupabase() {
-    if (!window.createClient || SUPABASE_URL === '' || SUPABASE_ANON_KEY === '') {
+    if (!window.supabase || SUPABASE_URL === '' || SUPABASE_ANON_KEY === '') {
         console.log('Supabase 未配置或 SDK 未加载，使用本地存储');
         return;
     }
     try {
-        supabase = window.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         supabaseEnabled = true;
         console.log('Supabase 初始化成功');
     } catch (e) {

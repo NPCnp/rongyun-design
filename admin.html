@@ -2,18 +2,13 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-<<<<<<< HEAD
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-=======
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
->>>>>>> e6d0e15daab3311766c20d579f0e89616ff02067
     <title>订单管理 - 榕韵亲子定制</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght=300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-<<<<<<< HEAD
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -22,25 +17,12 @@
             -ms-text-size-adjust: 100%;
             touch-action: manipulation;
         }
-=======
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
->>>>>>> e6d0e15daab3311766c20d579f0e89616ff02067
         body {
             font-family: 'Noto Sans SC', sans-serif;
             background: #faf5f0;
             min-height: 100vh;
             padding: 20px;
         }
-        .admin-back {
-            display: inline-block;
-            margin-bottom: 20px;
-            color: #b45f2b;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 1rem;
-        }
-        .admin-back:hover { text-decoration: underline; }
         .admin-container {
             max-width: 1200px;
             margin: 0 auto;
@@ -92,13 +74,10 @@
         }
         .stat-card.pending p { color: #e65100; }
         .stat-card.completed p { color: #2e7d32; }
-<<<<<<< HEAD
         .stat-card.active {
             border: 2px solid #b45f2b;
             background: #fff8f3;
         }
-=======
->>>>>>> e6d0e15daab3311766c20d579f0e89616ff02067
         .admin-actions {
             display: flex;
             gap: 12px;
@@ -461,34 +440,17 @@
     
     <script>
         const STORAGE_KEY = 'diy_orders';
-<<<<<<< HEAD
-        const SUPABASE_URL = 'https://mmfovpkrzo dkvnokaugy.supabase.co';
+        const SUPABASE_URL = 'https://mmfovpkrzodkvnokauqy.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_LYvf6FRSMSZRc9lfFIKOnA_XG7InVYt';
         
         let supabase = null;
         let supabaseEnabled = false;
-        
-        function addMobileClickSupport(element, callback) {
-            let isTouch = false;
-            element.addEventListener('touchstart', function(e) {
-                isTouch = true;
-                e.preventDefault();
-            });
-            element.addEventListener('touchend', function(e) {
-                if (isTouch) {
-                    callback(e);
-                    isTouch = false;
-                }
-            });
-            element.addEventListener('click', callback);
-        }
         
         function getOrdersFromStorage() {
             try {
                 const testKey = 'test_storage';
                 localStorage.setItem(testKey, 'test');
                 localStorage.removeItem(testKey);
-                
                 return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
             } catch (e) {
                 console.warn('localStorage 不可用，使用内存存储');
@@ -506,12 +468,12 @@
         }
         
         async function initSupabase() {
-            if (!window.createClient || SUPABASE_URL === '' || SUPABASE_ANON_KEY === '') {
+            if (!window.supabase || SUPABASE_URL === '' || SUPABASE_ANON_KEY === '') {
                 console.log('Supabase 未配置，使用本地存储');
                 return;
             }
             try {
-                supabase = window.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 supabaseEnabled = true;
                 console.log('Supabase 初始化成功');
                 syncFromSupabase();
@@ -537,12 +499,13 @@
                 
                 const localOrders = getOrdersFromStorage();
                 const localCodes = new Set(localOrders.map(o => o.pickupCode));
-                
                 let updated = false;
+                
                 cloudOrders.forEach(order => {
                     const existingOrder = localOrders.find(o => o.pickupCode === order.pickup_code);
                     if (!existingOrder) {
                         localOrders.push({
+                            id: order.id,
                             orderNo: order.order_no || localOrders.length + 1,
                             name: order.name,
                             phone: order.phone,
@@ -552,9 +515,12 @@
                             time: order.created_at ? new Date(order.created_at).toLocaleString() : new Date().toLocaleString()
                         });
                         updated = true;
-                    } else if (existingOrder.status !== order.status) {
-                        existingOrder.status = order.status;
-                        updated = true;
+                    } else {
+                        if (existingOrder.status !== order.status) {
+                            existingOrder.status = order.status;
+                            updated = true;
+                        }
+                        existingOrder.id = order.id;
                     }
                 });
                 
@@ -604,68 +570,56 @@
             }
         }
         
-        async function getOrderByCode(code) {
-            if (!supabaseEnabled) return null;
-            try {
-                const { data, error } = await supabase
-                    .from('orders')
-                    .select('*')
-                    .eq('pickup_code', String(code))
-                    .single();
-                
-                if (error) {
-                    console.error('查询订单失败:', error);
-                    return null;
-                }
-                return data;
-            } catch (e) {
-                console.error('查询订单失败:', e);
-                return null;
-            }
-        }
-        
-        function markComplete(orderNo) {
+        async function markComplete(orderNo) {
             const orders = getOrdersFromStorage();
             const order = orders.find(o => o.orderNo === orderNo);
             if (order) {
                 order.status = '已制作';
                 saveOrdersToStorage(orders);
-                updateOrderStatus(orderNo, '已制作');
                 loadOrders();
                 showToast(`订单 #${orderNo} 已标记为已制作`);
+                
+                if (order.id && supabaseEnabled) {
+                    await updateOrderStatusInSupabase(order.id, '已制作');
+                }
             }
         }
         
-        function markPending(orderNo) {
+        async function markPending(orderNo) {
             const orders = getOrdersFromStorage();
             const order = orders.find(o => o.orderNo === orderNo);
             if (order) {
                 order.status = '待制作';
                 saveOrdersToStorage(orders);
-                updateOrderStatus(orderNo, '待制作');
                 loadOrders();
                 showToast(`订单 #${orderNo} 已恢复为待制作`);
+                
+                if (order.id && supabaseEnabled) {
+                    await updateOrderStatusInSupabase(order.id, '待制作');
+                }
             }
         }
         
-        function deleteOrder(orderNo) {
+        async function deleteOrder(orderNo) {
             if (!confirm(`确定要删除订单 #${orderNo} 吗？此操作不可撤销。`)) {
                 return;
             }
             let orders = getOrdersFromStorage();
+            const order = orders.find(o => o.orderNo === orderNo);
             orders = orders.filter(o => o.orderNo !== orderNo);
             saveOrdersToStorage(orders);
-            deleteOrderFromCloud(orderNo);
             loadOrders();
             showToast(`订单 #${orderNo} 已删除`);
+            
+            if (order && order.id && supabaseEnabled) {
+                await deleteOrderFromSupabase(order.id);
+            }
         }
-=======
->>>>>>> e6d0e15daab3311766c20d579f0e89616ff02067
-
+        
         function importOrders(event) {
             const file = event.target.files[0];
             if (!file) return;
-
+            
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
@@ -674,23 +628,19 @@
                         showToast('导入失败：文件格式不正确');
                         return;
                     }
-
-<<<<<<< HEAD
+                    
                     const localOrders = getOrdersFromStorage();
-=======
-                    const localOrders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
->>>>>>> e6d0e15daab3311766c20d579f0e89616ff02067
                     const localOrderNos = new Set(localOrders.map(o => o.orderNo));
-
                     let newOrders = 0;
+                    
                     importedOrders.forEach(order => {
                         if (!localOrderNos.has(order.orderNo)) {
                             localOrders.push(order);
                             newOrders++;
                         }
                     });
-
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(localOrders));
+                    
+                    saveOrdersToStorage(localOrders);
                     loadOrders();
                     showToast(`成功导入 ${newOrders} 个新订单！`);
                 } catch (err) {
@@ -700,34 +650,30 @@
             reader.readAsText(file);
             event.target.value = '';
         }
-
+        
         function showToast(msg) {
             const toast = document.getElementById('toast');
             toast.textContent = msg;
             toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 2000);
         }
-
+        
         function loadOrders() {
-<<<<<<< HEAD
             const orders = getOrdersFromStorage();
-=======
-            const orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
->>>>>>> e6d0e15daab3311766c20d579f0e89616ff02067
             updateStats(orders);
             renderOrders(orders);
         }
-
+        
         function updateStats(orders) {
             const total = orders.length;
             const pending = orders.filter(o => o.status === '待制作').length;
             const completed = orders.filter(o => o.status === '已制作').length;
-
+            
             document.getElementById('totalOrders').textContent = total;
             document.getElementById('pendingOrders').textContent = pending;
             document.getElementById('completedOrders').textContent = completed;
         }
-
+        
         function formatTime(timeStr) {
             if (!timeStr) return '';
             if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(timeStr)) {
@@ -747,7 +693,7 @@
                 return timeStr;
             }
         }
-
+        
         function debounce(func, delay = 300) {
             let timer = null;
             return function(...args) {
@@ -755,22 +701,22 @@
                 timer = setTimeout(() => func.apply(this, args), delay);
             };
         }
-
+        
         const debouncedRender = debounce(() => renderOrders());
-
+        
         function renderOrders(orders = null) {
             if (!orders) {
-                orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                orders = getOrdersFromStorage();
             }
-
+            
             const grid = document.getElementById('ordersGrid');
             const noOrders = document.getElementById('noOrders');
-
+            
             const searchText = document.getElementById('searchInput').value.toLowerCase();
             const statusFilter = document.getElementById('statusFilter').value;
-
+            
             let filtered = orders;
-
+            
             if (searchText) {
                 filtered = filtered.filter(o => 
                     o.name.toLowerCase().includes(searchText) || 
@@ -778,21 +724,21 @@
                     (o.pickupCode && o.pickupCode.toString().includes(searchText))
                 );
             }
-
+            
             if (statusFilter !== 'all') {
                 filtered = filtered.filter(o => o.status === statusFilter);
             }
-
+            
             filtered.sort((a, b) => b.orderNo - a.orderNo);
-
+            
             if (filtered.length === 0) {
                 grid.innerHTML = '';
                 noOrders.style.display = 'block';
                 return;
             }
-
+            
             noOrders.style.display = 'none';
-
+            
             grid.innerHTML = filtered.map(order => `
                 <div class="order-card">
                     <input type="checkbox" class="order-select" data-order-no="${order.orderNo}" onchange="checkSelectAll()">
@@ -827,7 +773,7 @@
                 </div>
             `).join('');
         }
-
+        
         function copyPickupCode(event) {
             event.stopPropagation();
             const codeElement = event.target.parentElement.querySelector('span');
@@ -838,102 +784,66 @@
                 showToast('复制失败');
             });
         }
-
-<<<<<<< HEAD
+        
         function filterByStatus(status) {
             document.getElementById('statusFilter').value = status;
-            // 移除所有卡片的 active 样式
             document.querySelectorAll('.stat-card').forEach(card => card.classList.remove('active'));
-            // 给对应卡片添加 active 样式
             const statusMap = { 'all': 0, '待制作': 1, '已制作': 2 };
             const index = statusMap[status] ?? 0;
             document.querySelectorAll('.stat-card')[index]?.classList.add('active');
-=======
-        function markComplete(orderNo) {
-            const orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-            const order = orders.find(o => o.orderNo === orderNo);
-            if (order) {
-                order.status = '已制作';
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
-                loadOrders();
-                showToast(`订单 #${orderNo} 已标记为已制作`);
-            }
-        }
-
-        function markPending(orderNo) {
-            const orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-            const order = orders.find(o => o.orderNo === orderNo);
-            if (order) {
-                order.status = '待制作';
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
-                loadOrders();
-                showToast(`订单 #${orderNo} 已恢复为待制作`);
-            }
-        }
-
-        function deleteOrder(orderNo) {
-            if (!confirm(`确定要删除订单 #${orderNo} 吗？此操作不可撤销。`)) {
-                return;
-            }
-            let orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-            orders = orders.filter(o => o.orderNo !== orderNo);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
-            loadOrders();
-            showToast(`订单 #${orderNo} 已删除`);
-        }
-
-        function filterByStatus(status) {
-            document.getElementById('statusFilter').value = status;
->>>>>>> e6d0e15daab3311766c20d579f0e89616ff02067
             renderOrders();
         }
-
+        
         function toggleSelectAll() {
             const selectAllCheckbox = document.getElementById('selectAll');
             const orderCheckboxes = document.querySelectorAll('.order-select');
             orderCheckboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
         }
-
+        
         function checkSelectAll() {
             const selectAllCheckbox = document.getElementById('selectAll');
             const orderCheckboxes = document.querySelectorAll('.order-select');
             selectAllCheckbox.checked = [...orderCheckboxes].every(cb => cb.checked);
         }
-
+        
         function getSelectedOrders() {
             const checkboxes = document.querySelectorAll('.order-select:checked');
             return [...checkboxes].map(cb => parseInt(cb.dataset.orderNo));
         }
-
-        function batchMarkComplete() {
+        
+        async function batchMarkComplete() {
             const selected = getSelectedOrders();
             if (selected.length === 0) {
                 showToast('请先选择订单');
                 return;
             }
-<<<<<<< HEAD
             const orders = getOrdersFromStorage();
-=======
-            const orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
->>>>>>> e6d0e15daab3311766c20d579f0e89616ff02067
             let count = 0;
+            const ordersToUpdate = [];
+            
             orders.forEach(o => {
                 if (selected.includes(o.orderNo) && o.status === '待制作') {
                     o.status = '已制作';
                     count++;
+                    if (o.id) {
+                        ordersToUpdate.push(o);
+                    }
                 }
             });
-<<<<<<< HEAD
+            
             saveOrdersToStorage(orders);
-=======
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
->>>>>>> e6d0e15daab3311766c20d579f0e89616ff02067
             loadOrders();
             document.getElementById('selectAll').checked = false;
             showToast(`已将 ${count} 个订单标记为已制作`);
+            
+            if (supabaseEnabled && ordersToUpdate.length > 0) {
+                for (const order of ordersToUpdate) {
+                    await updateOrderStatusInSupabase(order.id, '已制作');
+                }
+            }
         }
-
-        function batchDelete() {
+        
+        async function batchDelete() {
             const selected = getSelectedOrders();
             if (selected.length === 0) {
                 showToast('请先选择订单');
@@ -942,36 +852,35 @@
             if (!confirm(`确定要删除选中的 ${selected.length} 个订单吗？此操作不可撤销。`)) {
                 return;
             }
-            let orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            let orders = getOrdersFromStorage();
+            const ordersToDelete = orders.filter(o => selected.includes(o.orderNo) && o.id);
             orders = orders.filter(o => !selected.includes(o.orderNo));
-<<<<<<< HEAD
+            
             saveOrdersToStorage(orders);
-=======
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
->>>>>>> e6d0e15daab3311766c20d579f0e89616ff02067
             loadOrders();
             document.getElementById('selectAll').checked = false;
             showToast(`已删除 ${selected.length} 个订单`);
+            
+            if (supabaseEnabled && ordersToDelete.length > 0) {
+                for (const order of ordersToDelete) {
+                    await deleteOrderFromSupabase(order.id);
+                }
+            }
         }
-
+        
         function clearAllOrders() {
             if (!confirm('⚠️ 确定要清空所有订单吗？此操作不可撤销！')) {
                 return;
             }
-<<<<<<< HEAD
             try {
                 localStorage.removeItem(STORAGE_KEY);
             } catch (e) {
                 window.tempOrders = [];
             }
-=======
-            localStorage.removeItem(STORAGE_KEY);
->>>>>>> e6d0e15daab3311766c20d579f0e89616ff02067
             loadOrders();
             showToast('所有订单已清空');
         }
-
-<<<<<<< HEAD
+        
         function normalizeOrderStatus() {
             const orders = getOrdersFromStorage();
             let updated = false;
@@ -985,41 +894,19 @@
                 saveOrdersToStorage(orders);
                 loadOrders();
                 showToast('已统一订单状态值');
-            } else {
-                showToast('订单状态值已经统一');
             }
         }
-
-        function exportOrderImage(orderNo) {
-            const orders = getOrdersFromStorage();
-=======
-        function exportOrderImage(orderNo) {
-            const orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
->>>>>>> e6d0e15daab3311766c20d579f0e89616ff02067
-            const order = orders.find(o => o.orderNo === orderNo);
-            if (order && order.design) {
-                const link = document.createElement('a');
-                link.download = `order_${order.orderNo}_${order.name}.png`;
-                link.href = order.design;
-                link.click();
-                showToast('设计图已导出');
-            }
-        }
-
+        
         function exportOrdersCSV() {
-<<<<<<< HEAD
             const orders = getOrdersFromStorage();
-=======
-            const orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
->>>>>>> e6d0e15daab3311766c20d579f0e89616ff02067
             if (orders.length === 0) {
                 showToast('暂无订单可导出');
                 return;
             }
-
+            
             const headers = ['订单号', '姓名', '手机', '取件码', '状态', '下单时间'];
             const csvData = [headers.join(',')];
-
+            
             orders.sort((a, b) => a.orderNo - b.orderNo).forEach(order => {
                 const row = [
                     order.orderNo,
@@ -1031,18 +918,14 @@
                 ];
                 csvData.push(row.join(','));
             });
-
+            
             const csvBlob = new Blob(['\ufeff' + csvData.join('\n')], { type: 'text/csv;charset=utf-8;' });
             saveAs(csvBlob, `榕韵定制订单_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.csv`);
             showToast('CSV导出成功');
         }
-
+        
         function exportAllOrders() {
-<<<<<<< HEAD
             const orders = getOrdersFromStorage();
-=======
-            const orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
->>>>>>> e6d0e15daab3311766c20d579f0e89616ff02067
             if (orders.length === 0) {
                 showToast('暂无订单可导出');
                 return;
@@ -1052,32 +935,28 @@
             saveAs(blob, `榕韵定制订单_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.json`);
             showToast('JSON导出成功');
         }
-
+        
         async function exportDesignsZip() {
-<<<<<<< HEAD
             const orders = getOrdersFromStorage();
-=======
-            const orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
->>>>>>> e6d0e15daab3311766c20d579f0e89616ff02067
             if (orders.length === 0) {
                 showToast('暂无订单可导出');
                 return;
             }
-
+            
             const selected = getSelectedOrders();
             let ordersToExport = orders;
             if (selected.length > 0) {
                 ordersToExport = orders.filter(o => selected.includes(o.orderNo));
             }
-
+            
             const withDesign = ordersToExport.filter(o => o.design);
             if (withDesign.length === 0) {
                 showToast('没有设计图可导出');
                 return;
             }
-
+            
             showToast(`正在处理 ${withDesign.length} 张图片...`);
-
+            
             try {
                 const zip = new JSZip();
                 for (const order of withDesign) {
@@ -1089,7 +968,7 @@
                         console.error('下载图片失败:', order.orderNo);
                     }
                 }
-
+                
                 const zipBlob = await zip.generateAsync({ type: 'blob' });
                 saveAs(zipBlob, `榕韵定制设计图_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.zip`);
                 showToast('设计图已打包下载');
@@ -1098,45 +977,37 @@
                 showToast('打包失败，请重试');
             }
         }
-
+        
         function openImageModal(designUrl) {
             const modal = document.getElementById('imageModal');
             const image = document.getElementById('modalImage');
             image.src = designUrl;
             modal.classList.add('active');
         }
-
+        
         function closeImageModal() {
             const modal = document.getElementById('imageModal');
             modal.classList.remove('active');
         }
-
+        
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 closeImageModal();
             }
         });
-
+        
         document.getElementById('searchInput').addEventListener('input', debouncedRender);
-<<<<<<< HEAD
         document.getElementById('statusFilter').addEventListener('change', function() {
             const status = this.value;
-            // 移除所有卡片的 active 样式
             document.querySelectorAll('.stat-card').forEach(card => card.classList.remove('active'));
-            // 给对应卡片添加 active 样式
             const statusMap = { 'all': 0, '待制作': 1, '已制作': 2 };
             const index = statusMap[status] ?? 0;
             document.querySelectorAll('.stat-card')[index]?.classList.add('active');
             renderOrders();
         });
-
+        
         normalizeOrderStatus();
-        checkUrlParams();
         initSupabase();
-=======
-        document.getElementById('statusFilter').addEventListener('change', renderOrders);
-
->>>>>>> e6d0e15daab3311766c20d579f0e89616ff02067
         loadOrders();
     </script>
 </body>

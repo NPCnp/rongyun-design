@@ -41,7 +41,7 @@ function safeRemoveStorage(key) {
     }
 }
 
-var SUPABASE_URL = 'https://mmfovpkrzo dkvnokaugy.supabase.co';
+var SUPABASE_URL = 'https://mmfovpkrzodkvnokauqy.supabase.co';
 var SUPABASE_ANON_KEY = 'sb_publishable_LYvf6FRSMSZRc9lfFIKOnA_XG7InVYt';
 
 var LC_APP_ID = 'YOUR_APP_ID';
