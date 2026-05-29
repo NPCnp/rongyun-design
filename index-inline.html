@@ -1,0 +1,1179 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>榕韵亲子定制 | 自助设计</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght=300;400;500;600;700&family=Noto+Serif+SC:wght=400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; }
+        body { font-family: 'Noto Sans SC', sans-serif; background: #FAF7F2; display: flex; flex-direction: column; }
+        
+        .app-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        
+        .header { background: linear-gradient(135deg, #C9A87C, #E8D5C4); padding: 16px; text-align: center; }
+        .header h1 { font-family: 'Noto Serif SC', serif; font-size: 1.2rem; color: #fff; margin-bottom: 4px; }
+        .header p { color: rgba(255,255,255,0.9); font-size: 0.8rem; }
+        .shop-info { font-size: 0.7rem; color: rgba(255,255,255,0.8); margin-top: 4px; }
+
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding-bottom: 90px; }
+
+        .pattern-scroll-wrapper { background: #fff; padding: 12px 0; border-bottom: 1px solid #E5DED5; }
+        .category-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 0 12px; margin-bottom: 12px; scrollbar-width: none; }
+        .category-tabs::-webkit-scrollbar { display: none; }
+        .cat-btn { flex-shrink: 0; padding: 10px 20px; background: #E8D5C4; border-radius: 30px; cursor: pointer; font-size: 0.85rem; transition: 0.2s; white-space: nowrap; min-width: 80px; }
+        .cat-btn.active, .cat-btn:hover { background: #B84A3C; color: white; }
+        
+        .pattern-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 0 12px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .pattern-scroll::-webkit-scrollbar { display: none; }
+        .pattern-item { flex-shrink: 0; width: 80px; background: white; border-radius: 12px; padding: 8px; text-align: center; cursor: pointer; border: 1px solid #E5DED5; }
+        .pattern-item:active { transform: scale(0.96); }
+        .pattern-emoji { width: 50px; height: 50px; margin-bottom: 6px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; background: #faf7f2; border-radius: 8px; }
+        .pattern-label { font-size: 0.65rem; color: #6B6B6B; }
+
+        .canvas-section { padding: 4px; display: flex; flex-direction: column; }
+        .canvas-container { position: relative; background: #f0e6d8; border-radius: 12px; padding: 8px; display: flex; align-items: center; justify-content: center; touch-action: none; }
+        .canvas-wrapper { width: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        #designCanvas { width: 100%; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); touch-action: none; }
+
+        .text-tools { background: white; border-radius: 16px; padding: 12px; margin-top: 8px; }
+        #userTextInput { width: 100%; padding: 12px; border: 1px solid #E5DED5; border-radius: 12px; font-size: 0.9rem; resize: none; margin-bottom: 12px; min-height: 60px; }
+        .preset-phrases { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .preset-phrase { padding: 8px 14px; background: #E8D5C4; border-radius: 30px; font-size: 0.8rem; cursor: pointer; }
+        .font-controls { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+        .font-controls select { flex: 1; padding: 10px; border: 1px solid #E5DED5; border-radius: 30px; font-size: 0.85rem; }
+        .font-controls input[type="color"] { width: 48px; height: 48px; border: none; border-radius: 12px; cursor: pointer; }
+        #addTextBtn { width: 100%; padding: 14px; border: none; border-radius: 40px; font-size: 0.9rem; cursor: pointer; background: #E8D5C4; color: #2C2C2C; }
+        #addTextBtn:hover, #addTextBtn:active { background: #C9A87C; color: white; }
+        .bg-select { width: 100%; padding: 12px; border-radius: 30px; border: 1px solid #E5DED5; background: white; margin-top: 8px; }
+
+        .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; padding: 12px; display: flex; gap: 10px; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 100; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+        .bottom-btn { flex: 1; height: 56px; border: none; border-radius: 16px; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: transform 0.1s; }
+        .bottom-btn:active { transform: scale(0.96); }
+        .bottom-btn.primary { background: #B84A3C; color: white; }
+        .bottom-btn.secondary { background: #E8D5C4; color: #2C2C2C; }
+        .bottom-btn:disabled { opacity: 0.5; }
+
+        .preview-thumb { position: fixed; top: 50%; right: 12px; transform: translateY(-50%); width: 60px; height: 60px; background: #f0e6d8; border-radius: 12px; padding: 4px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 50; }
+        .preview-thumb img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; background: white; min-width: 40px; min-height: 40px; display: block; }
+
+        .mockup-type-toggle { position: fixed; top: 50%; left: 12px; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 50; }
+        .mockup-type-btn { width: 48px; height: 48px; border: none; border-radius: 12px; font-size: 1.2rem; cursor: pointer; background: rgba(255,255,255,0.9); box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.1s; }
+        .mockup-type-btn:active { transform: scale(0.96); }
+        .mockup-type-btn.active { background: #4A6FA5; color: white; }
+
+        .float-btn { position: fixed; width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer; font-size: 1.2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 200; transition: transform 0.1s; }
+        .float-btn:active { transform: scale(0.96); }
+        .float-btn.back-top { bottom: calc(100px + env(safe-area-inset-bottom)); right: 16px; background: #B84A3C; color: white; }
+        .float-btn.service { bottom: calc(170px + env(safe-area-inset-bottom)); right: 16px; background: #4A6FA5; color: white; }
+
+        .toast { position: fixed; bottom: calc(100px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 12px 24px; border-radius: 40px; font-size: 0.85rem; opacity: 0; transition: 0.2s; pointer-events: none; z-index: 2000; }
+        .toast.show { opacity: 1; }
+
+        .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; border-radius: 24px; width: 90%; max-width: 400px; max-height: 80vh; overflow-y: auto; }
+        .modal-header { padding: 16px; border-bottom: 1px solid #E5DED5; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { color: #B84A3C; font-size: 1.1rem; }
+        .modal-close { width: 40px; height: 40px; border-radius: 50%; background: #f0f0f0; border: none; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; }
+        .modal-body { padding: 16px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 500; }
+        .form-group input { width: 100%; padding: 14px; border: 1px solid #E5DED5; border-radius: 40px; font-size: 1rem; }
+        .form-group input.readonly { background: #f5f5f5; text-align: center; font-weight: bold; }
+        .order-preview-img { width: 100%; border-radius: 12px; margin-top: 8px; }
+        .modal-footer { padding: 16px; border-top: 1px solid #E5DED5; }
+
+        .preview-modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.95); z-index: 2000; align-items: center; justify-content: center; }
+        .preview-modal.active { display: flex; }
+        .preview-close { position: absolute; top: 20px; right: 20px; width: 52px; height: 52px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.5rem; }
+        .preview-content { width: 95vw; height: 70vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .preview-content img { max-width: 100%; max-height: 100%; object-fit: contain; background: white; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.3); border: 1px solid #E5DED5; min-width: 100px; min-height: 100px; display: block; }
+        .preview-controls { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 12px; padding-bottom: env(safe-area-inset-bottom); }
+        .preview-btn { padding: 14px 24px; background: rgba(255,255,255,0.9); border: none; border-radius: 40px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; transition: transform 0.1s; }
+        .preview-btn:active { transform: scale(0.96); }
+
+        .context-menu { display: none; position: fixed; background: white; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 3000; padding: 8px; }
+        .context-menu.active { display: block; }
+        .context-menu-item { padding: 14px 24px; cursor: pointer; border-radius: 12px; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+        .context-menu-item:hover { background: #FAF7F2; }
+        .context-menu-item.danger { color: #B84A3C; }
+        .context-menu-item.danger:hover { background: #FFF0F0; }
+
+        .service-modal .modal-body { text-align: center; }
+        .service-qrcode { width: 200px; height: 200px; margin: 20px auto; background: #fff; padding: 10px; border-radius: 16px; }
+        .service-phone { font-size: 1.2rem; font-weight: bold; color: #B84A3C; margin-top: 16px; }
+
+        .hint { font-size: 0.7rem; text-align: center; color: #888; margin-top: 8px; }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="header">
+        <h1>🌿 榕韵亲子定制</h1>
+        <p>福州文旅 | 自助设计 · 即印即得</p>
+        <div class="shop-info">🕘 09:00-21:00 | 📍 三坊七巷主街</div>
+    </div>
+
+    <div class="main-content">
+        <div class="pattern-scroll-wrapper">
+            <div class="category-tabs" id="categoryTabs"></div>
+            <div class="pattern-scroll" id="patternGrid"></div>
+        </div>
+
+        <div class="canvas-section">
+            <div class="canvas-container">
+                <div class="canvas-wrapper">
+                    <canvas id="designCanvas" width="600" height="400"></canvas>
+                </div>
+            </div>
+
+            <div class="text-tools">
+                <textarea id="userTextInput" placeholder="输入祝福语..."></textarea>
+                <div class="preset-phrases" id="presetPhrases"></div>
+                <div class="font-controls">
+                    <select id="fontFamilySelect">
+                        <option value="'Noto Serif SC', serif">思源宋体</option>
+                        <option value="'KaiTi', serif">楷体</option>
+                    </select>
+                    <select id="fontSizeSelect">
+                        <option value="24">小</option>
+                        <option value="32" selected>中</option>
+                        <option value="48">大</option>
+                    </select>
+                    <input type="color" id="textColorPicker" value="#4a2c14">
+                </div>
+                <button id="addTextBtn" onclick="addUserText()">✍️ 添加文字</button>
+                <select id="bgColorSelect" class="bg-select">
+                    <option value="#ffffff">白色底色</option>
+                    <option value="#fff5e6">米黄宣纸</option>
+                    <option value="#e7f0e6">茉莉淡绿</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-bar">
+        <button class="bottom-btn secondary" id="undoBtn">↩️ 撤销</button>
+        <button class="bottom-btn secondary" id="zoomInBtn">➕ 放大</button>
+        <button class="bottom-btn secondary" id="zoomOutBtn">➖ 缩小</button>
+        <button class="bottom-btn secondary" id="deleteSelectedBtn" disabled>🗑️ 删除</button>
+        <button class="bottom-btn primary" id="orderBtn">✅ 下单</button>
+    </div>
+
+    <div class="preview-thumb" id="previewThumb">
+        <img id="previewThumbImg" alt="预览">
+    </div>
+
+    <div class="mockup-type-toggle">
+        <button class="mockup-type-btn active" data-type="postcard" title="明信片">📬</button>
+        <button class="mockup-type-btn" data-type="tote" title="帆布袋">🛍️</button>
+    </div>
+
+    <button class="float-btn back-top" id="backTopBtn" title="返回顶部">⬆️</button>
+    <button class="float-btn service" id="serviceBtn" title="联系客服">💬</button>
+</div>
+
+<div class="preview-modal" id="previewModal">
+    <div class="preview-close" id="previewClose">✕</div>
+    <div class="preview-content" id="previewContent">
+        <img id="previewImage" src="" alt="预览">
+    </div>
+    <div class="preview-controls">
+        <button class="preview-btn" id="switchMockupBtn">🔄 切换模式</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="orderModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>📋 确认订单</h3>
+            <button class="modal-close" id="orderModalClose">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>订单号</label>
+                <input type="text" id="orderNoInput" readonly class="readonly">
+            </div>
+            <div class="form-group">
+                <label>姓名 <span style="color:red">*</span></label>
+                <input type="text" id="orderNameInput" placeholder="请输入您的姓名">
+            </div>
+            <div class="form-group">
+                <label>手机号 <span style="color:red">*</span></label>
+                <input type="tel" id="orderPhoneInput" placeholder="请输入手机号">
+            </div>
+            <img id="orderPreviewImage" class="order-preview-img" alt="设计预览">
+            <div id="pickupCodeDisplay" style="display:none;">
+                <div style="background:#B84A3C;color:white;padding:12px;border-radius:12px;text-align:center;margin-top:12px;">
+                    <div style="font-size:0.8rem;margin-bottom:4px;">取件码</div>
+                    <div style="font-size:1.5rem;font-weight:bold;letter-spacing:2px;" id="pickupCodeText"></div>
+                    <button style="margin-top:8px;padding:6px 16px;background:rgba(255,255,255,0.2);border:none;border-radius:20px;color:white;font-size:0.8rem;cursor:pointer;" id="copyPickupBtn">一键复制</button>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="bottom-btn primary" id="submitOrderBtn" style="width:100%;">✅ 提交订单</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay service-modal" id="serviceModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>💬 联系店家</h3>
+            <button class="modal-close" id="serviceModalClose">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="service-qrcode">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='white'/%3E%3Crect x='10' y='10' width='36' height='36' fill='%23333'/%3E%3Crect x='56' y='10' width='36' height='36' fill='%23333'/%3E%3Crect x='102' y='10' width='36' height='36' fill='%23333'/%3E%3Crect x='154' y='10' width='36' height='36' fill='%23333'/%3E%3Crect x='10' y='56' width='36' height='36' fill='%23333'/%3E%3Crect x='56' y='56' width='36' height='36' fill='white'/%3E%3Crect x='102' y='56' width='36' height='36' fill='%23333'/%3E%3Crect x='154' y='56' width='36' height='36' fill='%23333'/%3E%3Crect x='10' y='102' width='36' height='36' fill='%23333'/%3E%3Crect x='56' y='102' width='36' height='36' fill='%23333'/%3E%3Crect x='102' y='102' width='36' height='36' fill='%23333'/%3E%3Crect x='154' y='102' width='36' height='36' fill='%23333'/%3E%3Crect x='10' y='154' width='36' height='36' fill='%23333'/%3E%3Crect x='56' y='154' width='36' height='36' fill='%23333'/%3E%3Crect x='102' y='154' width='36' height='36' fill='%23333'/%3E%3Crect x='154' y='154' width='36' height='36' fill='white'/%3E%3C/svg%3E" width="180" height="180" alt="二维码">
+            </div>
+            <div>微信扫码咨询</div>
+            <div class="service-phone">📞 138-0000-0000</div>
+        </div>
+    </div>
+</div>
+
+<div class="context-menu" id="contextMenu">
+    <div class="context-menu-item" id="ctxDelete">🗑️ 删除</div>
+    <div class="context-menu-item" id="ctxCopy">📋 复制</div>
+    <div class="context-menu-item" id="ctxBringFront">⬆️ 置于顶层</div>
+    <div class="context-menu-item" id="ctxSendBack">⬇️ 置于底层</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var STORAGE_KEY = 'diy_orders';
+var ORDER_NO_KEY = 'last_order_no';
+var DRAFT_KEY = 'diy_draft';
+var MAX_HISTORY_STEPS = 20;
+
+var themeData = {
+    "三坊七巷": ["图画/爱心树.png 爱心树", "图画/林则徐纪念馆.png 林则徐", "图画/马鞍墙.png 马鞍墙", "图画/三坊七巷.png 三坊七巷"],
+    "福州特色": ["图画/福.png 福", "图画/古厝飞檐.png 古厝", "图画/红墙.jpg 红墙", "图画/流苏.jpg 流苏", "图画/茉莉花.png 茉莉", "图画/鱼丸.png 鱼丸", "图画/州.png 州"],
+    "上下杭": ["图画/上下杭.png 上下杭", "图画/夜景.jpg 夜景"],
+    "西禅寺": ["图画/西禅寺.png 西禅寺"],
+    "地标建筑": ["图画/白塔.png 白塔", "图画/乌塔.png 乌塔", "图画/五一广场.png 五一广场", "图画/镇海楼.png 镇海楼"]
+};
+var themeColor = { "三坊七巷":"#b35f2d","福州特色":"#8fbc8f","上下杭":"#5b7c5c","西禅寺":"#b8865b","地标建筑":"#4a6fa5" };
+
+var fabricCanvas, currentCategory = "三坊七巷", currentMockup = 'postcard';
+var historyStack = [], historyIndex = -1;
+var updateMockupTimeout = null;
+
+var canvasSizes = {
+    postcard: { width: 600, height: 400 },
+    tote: { width: 450, height: 600 }
+};
+
+var previewSizes = {
+    postcard: { width: 600, height: 400 },
+    tote: { width: 450, height: 600 }
+};
+
+var presetPhrases = ['有福之州', '平安喜乐', '长乐未央', '岁岁平安', '家和万事兴', '福到家门'];
+
+function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.innerText = msg;
+    t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 2000);
+}
+
+function vibrate(pattern) {
+    if ('vibrate' in navigator) {
+        navigator.vibrate(pattern || 10);
+    }
+}
+
+function initFabric(keepContent, oldCanvasJson) {
+    keepContent = keepContent || false;
+    oldCanvasJson = oldCanvasJson || null;
+    
+    var canvasEl = document.getElementById('designCanvas');
+    var newSize = canvasSizes[currentMockup];
+    canvasEl.width = newSize.width;
+    canvasEl.height = newSize.height;
+    
+    if (fabricCanvas) fabricCanvas.dispose();
+    
+    fabricCanvas = new fabric.Canvas('designCanvas', {
+        width: newSize.width,
+        height: newSize.height,
+        preserveObjectStacking: true,
+        selection: true,
+        fireRightClick: true,
+        enableRetinaScaling: true,
+        allowTouchScrolling: false,
+        enableTouchScrolling: false,
+        uniScaleTransform: true,
+        centeredScaling: true,
+        touchEnabled: true,
+        targetFindTolerance: 30,
+        selectionFullyContained: false,
+        hoverCursor: 'pointer',
+        movingCursor: 'grabbing',
+        freeDrawingCursor: 'crosshair',
+        renderOnAddRemove: true
+    });
+    
+    fabricCanvas.selectionBorderColor = '#B84A3C';
+    fabricCanvas.selectionColor = 'rgba(184, 74, 60, 0.2)';
+    fabricCanvas.selectionLineWidth = 2;
+    fabricCanvas.objectCaching = true;
+    
+    fabricCanvas.setHeight(newSize.height);
+    fabricCanvas.setWidth(newSize.width);
+    
+    fabric.Object.prototype.set({
+        cornerSize: 24,
+        cornerTouchSize: 48,
+        cornerColor: '#B84A3C',
+        cornerStrokeColor: '#fff',
+        borderColor: '#C9A87C',
+        borderScaleFactor: 3,
+        transparentCorners: false,
+        cornerStyle: 'rect',
+        hasBorders: true,
+        controlsAboveOverlay: true,
+        lockUniScaling: false,
+        selectable: true,
+        hasControls: true,
+        evented: true,
+        lockMovementX: false,
+        lockMovementY: false,
+        lockRotation: false
+    });
+    
+    var bgColor = document.getElementById('bgColorSelect').value;
+    fabricCanvas.setBackgroundColor(bgColor, function() {
+        fabricCanvas.renderAll();
+    });
+    
+    fabricCanvas.on('object:modified', function(e) {
+        validateObjectSize(e.target);
+        saveHistory();
+        scheduleUpdateMockup();
+        autoSaveDraft();
+    });
+    
+    fabricCanvas.on('object:moving', function(e) {
+    });
+    
+    fabricCanvas.on('object:scaling', function(e) {
+        validateObjectSize(e.target);
+    });
+    
+    fabricCanvas.on('object:added', function() {
+        scheduleUpdateMockup();
+        autoSaveDraft();
+    });
+    
+    fabricCanvas.on('object:removed', function() {
+        scheduleUpdateMockup();
+        autoSaveDraft();
+    });
+    
+    fabricCanvas.on('selection:created', updateDeleteBtn);
+    fabricCanvas.on('selection:updated', updateDeleteBtn);
+    fabricCanvas.on('selection:cleared', updateDeleteBtn);
+    fabricCanvas.on('text:dblclick', handleTextDoubleClick);
+    
+    if (keepContent && oldCanvasJson) {
+        fabricCanvas.loadFromJSON(oldCanvasJson, function() {
+            fabricCanvas.renderAll();
+            saveHistory();
+            scheduleUpdateMockup();
+        });
+    } else {
+        var defaultText = currentMockup === 'postcard' ? '福州·三坊七巷' : '榕韵·帆布袋';
+        var welcome = new fabric.Text(defaultText, {
+            left: 20,
+            top: 20,
+            fontSize: 13,
+            fontFamily: 'Noto Serif SC',
+            fill: '#b45f2b',
+            originX: 'left',
+            originY: 'top',
+            selectable: true,
+            hasControls: true,
+            hasBorders: true,
+            evented: true
+        });
+        fabricCanvas.add(welcome);
+        fabricCanvas.renderAll();
+        saveHistory();
+    }
+    updateDeleteBtn();
+}
+
+function scheduleUpdateMockup() {
+    if (updateMockupTimeout) clearTimeout(updateMockupTimeout);
+    updateMockupTimeout = setTimeout(function() {
+        updateMockup();
+    }, 100);
+}
+
+function validateObjectSize(obj) {
+    if (!obj) return;
+    
+    var canvasWidth = fabricCanvas.width;
+    var canvasHeight = fabricCanvas.height;
+    
+    if (obj.type === 'text' || obj.type === 'i-text') {
+        var minFontSize = 12;
+        var maxFontSize = canvasWidth * 0.5;
+        var currentFontSize = obj.fontSize * (obj.scaleX || 1);
+        
+        if (currentFontSize < minFontSize) {
+            var scale = minFontSize / obj.fontSize;
+            obj.set('scaleX', scale);
+            obj.set('scaleY', scale);
+        } else if (currentFontSize > maxFontSize) {
+            var scale = maxFontSize / obj.fontSize;
+            obj.set('scaleX', scale);
+            obj.set('scaleY', scale);
+        }
+    } else {
+        var minSize = 20;
+        var maxAreaRatio = 0.6;
+        var maxArea = canvasWidth * canvasHeight * maxAreaRatio;
+        
+        var currentWidth = obj.width * (obj.scaleX || 1);
+        var currentHeight = obj.height * (obj.scaleY || 1);
+        var currentArea = currentWidth * currentHeight;
+        
+        if (currentWidth < minSize || currentHeight < minSize) {
+            var scaleX = Math.max(minSize / obj.width, (obj.scaleX || 1));
+            var scaleY = Math.max(minSize / obj.height, (obj.scaleY || 1));
+            var scale = Math.max(scaleX, scaleY);
+            obj.set('scaleX', scale);
+            obj.set('scaleY', scale);
+        } else if (currentArea > maxArea) {
+            var scale = Math.sqrt(maxArea / currentArea);
+            obj.set('scaleX', (obj.scaleX || 1) * scale);
+            obj.set('scaleY', (obj.scaleY || 1) * scale);
+        }
+    }
+    
+    obj.setCoords();
+}
+
+function handleTextDoubleClick(e) {
+    var textObj = e.target;
+    if (!textObj || (textObj.type !== 'text' && textObj.type !== 'i-text')) return;
+    
+    var modal = document.createElement('div');
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 3000; padding: 20px; box-sizing: border-box;';
+    
+    var input = document.createElement('textarea');
+    input.value = textObj.text;
+    input.style.cssText = 'width: 100%; max-width: 400px; height: 120px; padding: 16px; font-size: 18px; font-family: Noto Serif SC, serif; border: none; border-radius: 16px; resize: none; margin-bottom: 16px;';
+    
+    var btnContainer = document.createElement('div');
+    btnContainer.style.display = 'flex';
+    btnContainer.style.gap = '12px';
+    
+    var cancelBtn = document.createElement('button');
+    cancelBtn.textContent = '取消';
+    cancelBtn.style.cssText = 'padding: 12px 24px; border: none; border-radius: 40px; font-size: 1rem; background: #E8D5C4; color: #2C2C2C;';
+    
+    var okBtn = document.createElement('button');
+    okBtn.textContent = '确定';
+    okBtn.style.cssText = 'padding: 12px 24px; border: none; border-radius: 40px; font-size: 1rem; background: #B84A3C; color: white;';
+    
+    btnContainer.appendChild(cancelBtn);
+    btnContainer.appendChild(okBtn);
+    modal.appendChild(input);
+    modal.appendChild(btnContainer);
+    
+    var closeModal = function() {
+        document.body.removeChild(modal);
+    };
+    
+    cancelBtn.addEventListener('click', closeModal);
+    
+    okBtn.addEventListener('click', function() {
+        var newText = input.value.trim();
+        if (newText) {
+            textObj.set('text', newText);
+            fabricCanvas.renderAll();
+            saveHistory();
+            showToast('文字已更新');
+        }
+        closeModal();
+    });
+    
+    document.body.appendChild(modal);
+    input.focus();
+}
+
+function switchMockupMode(mode) {
+    if (mode === currentMockup) return;
+    vibrate();
+    var oldJson = JSON.stringify(fabricCanvas.toJSON());
+    var oldSize = canvasSizes[currentMockup];
+    currentMockup = mode;
+    var newSize = canvasSizes[currentMockup];
+    
+    var parsedJson = JSON.parse(oldJson);
+    var objects = parsedJson.objects || [];
+    
+    objects.forEach(function(obj) {
+        var oldLeft = obj.left || 0;
+        var oldTop = obj.top || 0;
+        var relPosX = oldLeft / oldSize.width;
+        var relPosY = oldTop / oldSize.height;
+        obj.left = relPosX * newSize.width;
+        obj.top = relPosY * newSize.height;
+        obj.scaleX = obj.scaleX || 1;
+        obj.scaleY = obj.scaleY || 1;
+    });
+    
+    var newJson = JSON.stringify(parsedJson);
+    initFabric(true, newJson);
+    
+    document.querySelectorAll('.mockup-type-btn').forEach(function(t) {
+        t.classList.remove('active');
+    });
+    document.querySelector('.mockup-type-btn[data-type="' + mode + '"]').classList.add('active');
+    showToast('已切换到' + (mode === 'postcard' ? '明信片' : '帆布袋') + '模式');
+}
+
+function updateDeleteBtn() {
+    document.getElementById('deleteSelectedBtn').disabled = !fabricCanvas.getActiveObject();
+}
+
+function deleteSelected() {
+    var active = fabricCanvas.getActiveObject();
+    if (active) {
+        fabricCanvas.remove(active);
+        fabricCanvas.renderAll();
+        saveHistory();
+        showToast('已删除');
+        vibrate();
+    }
+}
+
+function saveHistory() {
+    var json = JSON.stringify(fabricCanvas.toJSON());
+    historyStack = historyStack.slice(0, historyIndex + 1);
+    historyStack.push(json);
+    historyIndex++;
+    
+    if (historyStack.length > MAX_HISTORY_STEPS) {
+        historyStack.shift();
+        historyIndex--;
+    }
+    
+    updateUndoRedo();
+}
+
+function undo() {
+    if (historyIndex > 0) {
+        historyIndex--;
+        fabricCanvas.loadFromJSON(historyStack[historyIndex], function() {
+            fabricCanvas.renderAll();
+            updateMockup();
+        });
+        updateUndoRedo();
+        showToast('撤销');
+        vibrate();
+    }
+}
+
+function zoomIn() {
+    var obj = fabricCanvas.getActiveObject();
+    if (!obj) {
+        showToast('请先选中一个元素');
+        return;
+    }
+    var newScale = (obj.scaleX || 1) + 0.05;
+    newScale = Math.min(newScale, 3.0);
+    obj.set({ scaleX: newScale, scaleY: newScale });
+    fabricCanvas.renderAll();
+    saveHistory();
+    updateMockup();
+    vibrate();
+}
+
+function zoomOut() {
+    var obj = fabricCanvas.getActiveObject();
+    if (!obj) {
+        showToast('请先选中一个元素');
+        return;
+    }
+    var newScale = (obj.scaleX || 1) - 0.05;
+    obj.set({ scaleX: newScale, scaleY: newScale });
+    fabricCanvas.renderAll();
+    saveHistory();
+    updateMockup();
+    vibrate();
+}
+
+function updateUndoRedo() {
+    document.getElementById('undoBtn').disabled = historyIndex <= 0;
+}
+
+function buildCategoryTabs() {
+    var container = document.getElementById('categoryTabs');
+    container.innerHTML = '';
+    Object.keys(themeData).forEach(function(cat) {
+        var btn = document.createElement('div');
+        btn.className = 'cat-btn ' + (cat === currentCategory ? 'active' : '');
+        btn.innerText = cat;
+        btn.onclick = function() {
+            vibrate();
+            currentCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(function(b) {
+                b.classList.remove('active');
+            });
+            btn.classList.add('active');
+            renderPatterns();
+        };
+        container.appendChild(btn);
+    });
+}
+
+function renderPatterns() {
+    var grid = document.getElementById('patternGrid');
+    grid.innerHTML = '';
+    themeData[currentCategory].forEach(function(name) {
+        var parts = name.split(' ');
+        var imgPath = parts[0];
+        var label = parts.slice(1).join(' ');
+        var div = document.createElement('div');
+        div.className = 'pattern-item';
+        div.innerHTML = '<div class="pattern-emoji"><img src="' + imgPath + '" alt="' + label + '" style="width:100%;height:100%;object-fit:contain;"></div><div class="pattern-label">' + label + '</div>';
+        div.onclick = function() {
+            vibrate();
+            addPatternToCanvas(name, themeColor[currentCategory]);
+        };
+        grid.appendChild(div);
+    });
+}
+
+function addPatternToCanvas(name, color) {
+    var centerX = fabricCanvas.width / 2;
+    var centerY = fabricCanvas.height / 2;
+    var parts = name.split(' ');
+    var imgPath = parts[0];
+    var label = parts.slice(1).join(' ');
+    
+    // 先尝试直接加载
+    fabric.Image.fromURL(imgPath, function(img) {
+        // 调整图片大小，使其适合画布
+        var maxWidth = fabricCanvas.width * 0.5;
+        var maxHeight = fabricCanvas.height * 0.5;
+        var scale = Math.min(maxWidth / img.width, maxHeight / img.height);
+        
+        img.set({
+            left: centerX,
+            top: centerY,
+            originX: 'center',
+            originY: 'center',
+            selectable: true,
+            hasControls: true,
+            hasBorders: true,
+            evented: true,
+            lockUniScaling: false,
+            transparentCorners: false,
+            cornerSize: 24,
+            cornerTouchSize: 48
+        });
+        
+        img.scale(scale);
+        
+        fabricCanvas.add(img);
+        fabricCanvas.setActiveObject(img);
+        fabricCanvas.renderAll();
+        saveHistory();
+        showToast('已添加: ' + label);
+        vibrate();
+    }, function(err) {
+        console.error('图片加载失败，尝试备用方案:', err);
+        // 如果图片加载有问题，使用 emoji 作为备用
+        var emoji = '🖼️';
+        var obj = new fabric.Text(emoji, {
+            left: centerX,
+            top: centerY,
+            fontSize: 48,
+            fontFamily: 'sans-serif',
+            fill: color,
+            originX: 'center',
+            originY: 'center',
+            selectable: true,
+            hasControls: true,
+            hasBorders: true,
+            evented: true,
+            lockUniScaling: false,
+            transparentCorners: false,
+            cornerSize: 24,
+            cornerTouchSize: 48
+        });
+        
+        fabricCanvas.add(obj);
+        fabricCanvas.setActiveObject(obj);
+        fabricCanvas.renderAll();
+        saveHistory();
+        showToast('已添加: ' + label);
+        vibrate();
+    }, { crossOrigin: 'anonymous' });
+}
+
+function addUserText(customText) {
+    console.log('addUserText called', customText);
+    
+    if (!fabricCanvas) {
+        console.error('fabricCanvas is null or undefined');
+        showToast('画布未初始化');
+        return;
+    }
+    
+    var content = customText || document.getElementById('userTextInput').value.trim() || '福州·有福';
+    console.log('Adding text content:', content);
+    
+    var fontFamily = document.getElementById('fontFamilySelect').value;
+    var fontSize = parseInt(document.getElementById('fontSizeSelect').value);
+    var color = document.getElementById('textColorPicker').value;
+    var centerX = fabricCanvas.width / 2;
+    var centerY = fabricCanvas.height / 2;
+    
+    try {
+        var obj = new fabric.Text(content, {
+            left: centerX,
+            top: centerY,
+            fontSize: fontSize,
+            fontFamily: fontFamily,
+            fill: color,
+            originX: 'center',
+            originY: 'center',
+            selectable: true,
+            hasControls: true,
+            hasBorders: true,
+            evented: true,
+            lockUniScaling: false,
+            transparentCorners: false,
+            cornerSize: 24,
+            cornerTouchSize: 48
+        });
+        
+        fabricCanvas.add(obj);
+        fabricCanvas.setActiveObject(obj);
+        fabricCanvas.renderAll();
+        saveHistory();
+        showToast('已添加文字: ' + content);
+        vibrate();
+        
+        if (!customText) {
+            document.getElementById('userTextInput').value = '';
+        }
+        
+        console.log('Text added successfully');
+    } catch (e) {
+        console.error('Error adding text:', e);
+        showToast('添加文字失败: ' + e.message);
+    }
+}
+
+function updateMockup() {
+    var thumbImg = document.getElementById('previewThumbImg');
+    if (!thumbImg) return;
+    
+    try {
+        console.log('正在更新缩略图...');
+        // 尝试直接使用画布对象渲染
+        var tempCanvas = fabricCanvas.toCanvasElement(1);
+        var designURL = tempCanvas.toDataURL('image/png');
+        console.log('缩略图URL长度:', designURL.length);
+        
+        thumbImg.onload = function() {
+            console.log('缩略图已加载');
+        };
+        thumbImg.onerror = function() {
+            console.error('缩略图加载失败');
+        };
+        
+        thumbImg.src = designURL;
+        
+        // 同时也更新预览图
+        updatePreviewModal();
+        
+    } catch (e) {
+        console.error('updateMockup error:', e);
+    }
+}
+
+function updatePreviewModal() {
+    var previewImg = document.getElementById('previewImage');
+    if (!previewImg) return;
+    
+    try {
+        console.log('正在生成预览图...');
+        // 使用相同的方法生成预览图
+        var tempCanvas = fabricCanvas.toCanvasElement(1);
+        var designURL = tempCanvas.toDataURL('image/png');
+        console.log('预览图已生成，URL长度:', designURL.length);
+        
+        previewImg.onload = function() {
+            console.log('预览图已加载');
+        };
+        previewImg.onerror = function() {
+            console.error('预览图加载失败');
+        };
+        
+        previewImg.src = designURL;
+        
+    } catch (e) {
+        console.error('updatePreviewModal error:', e);
+    }
+}
+
+function generatePostcardBackground() {
+    var canvas = document.createElement('canvas');
+    canvas.width = 600;
+    canvas.height = 400;
+    var ctx = canvas.getContext('2d');
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.18)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetX = 3;
+    ctx.shadowOffsetY = 6;
+    ctx.fillStyle = '#FFFDF5';
+    ctx.beginPath();
+    ctx.roundRect(10, 10, 580, 380, 10);
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';
+    ctx.beginPath();
+    ctx.roundRect(30, 30, 540, 340, 6);
+    ctx.fill();
+    
+    ctx.strokeStyle = '#D4AF37';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(28, 28, 544, 344, 8);
+    ctx.stroke();
+    
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(30, 30, 540, 340, 6);
+    ctx.stroke();
+    
+    return canvas;
+}
+
+function generateToteBackground() {
+    var canvas = document.createElement('canvas');
+    canvas.width = 450;
+    canvas.height = 600;
+    var ctx = canvas.getContext('2d');
+    
+    ctx.fillStyle = '#F5F5F5';
+    ctx.fillRect(0, 0, 450, 600);
+    
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetX = 4;
+    ctx.shadowOffsetY = 8;
+    
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.roundRect(60, 70, 330, 470, 8);
+    ctx.fill();
+    
+    ctx.shadowColor = 'transparent';
+    
+    ctx.strokeStyle = '#C2B08A';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 4]);
+    ctx.beginPath();
+    ctx.roundRect(70, 80, 310, 450, 4);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    ctx.strokeStyle = '#E0E0E0';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(60, 70, 330, 470, 8);
+    ctx.stroke();
+    
+    var gradient = ctx.createLinearGradient(140, 25, 140, 70);
+    gradient.addColorStop(0, '#E0E0E0');
+    gradient.addColorStop(0.5, '#F5F5F5');
+    gradient.addColorStop(1, '#D0D0D0');
+    ctx.strokeStyle = gradient;
+    ctx.lineWidth = 10;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(140, 70);
+    ctx.quadraticCurveTo(160, 25, 225, 25);
+    ctx.quadraticCurveTo(290, 25, 310, 70);
+    ctx.stroke();
+    
+    ctx.strokeStyle = '#F0F0F0';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(148, 70);
+    ctx.quadraticCurveTo(165, 30, 225, 30);
+    ctx.quadraticCurveTo(285, 30, 302, 70);
+    ctx.stroke();
+    
+    return canvas;
+}
+
+function openPreviewModal() {
+    console.log('打开预览');
+    document.getElementById('previewModal').classList.add('active');
+    
+    // 确保 DOM 更新后再生成预览
+    setTimeout(function() {
+        updatePreviewModal();
+    }, 100);
+}
+
+function closePreviewModal() {
+    document.getElementById('previewModal').classList.remove('active');
+}
+
+function openOrderModal() {
+    var orderNo = (parseInt(localStorage.getItem(ORDER_NO_KEY) || '0') + 1);
+    document.getElementById('orderNoInput').value = orderNo;
+    document.getElementById('orderNameInput').value = '';
+    document.getElementById('orderPhoneInput').value = '';
+    
+    // 使用相同的方法生成订单预览图
+    try {
+        var tempCanvas = fabricCanvas.toCanvasElement(1);
+        document.getElementById('orderPreviewImage').src = tempCanvas.toDataURL('image/png');
+    } catch (e) {
+        console.error('订单预览图生成失败:', e);
+    }
+    
+    document.getElementById('pickupCodeDisplay').style.display = 'none';
+    document.getElementById('orderModal').classList.add('active');
+}
+
+function closeOrderModal() {
+    document.getElementById('orderModal').classList.remove('active');
+}
+
+function submitOrder() {
+    var orderNo = (parseInt(localStorage.getItem(ORDER_NO_KEY) || '0') + 1);
+    var name = document.getElementById('orderNameInput').value.trim();
+    var phone = document.getElementById('orderPhoneInput').value.trim();
+    
+    if (!name) {
+        showToast('请输入姓名');
+        return;
+    }
+    if (!phone || !/^1[3-9]\d{9}$/.test(phone)) {
+        showToast('请输入正确的手机号');
+        return;
+    }
+    
+    localStorage.setItem(ORDER_NO_KEY, orderNo);
+    var design = fabricCanvas.toDataURL({ format: 'png', multiplier: 2 });
+    var pickupCode = Math.floor(100000 + Math.random() * 900000);
+    
+    var orderData = {
+        orderNo: orderNo,
+        name: name,
+        phone: phone,
+        design: design,
+        time: new Date().toLocaleString(),
+        timestamp: new Date().toISOString(),
+        status: '待制作',
+        pickupCode: pickupCode
+    };
+    
+    var orders = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    orders.push(orderData);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+
+    document.getElementById('pickupCodeText').innerText = pickupCode;
+    document.getElementById('pickupCodeDisplay').style.display = 'block';
+    
+    vibrate([50, 50, 50]);
+    showToast('订单已提交！');
+}
+
+function copyPickupCode() {
+    var pickupCode = document.getElementById('pickupCodeText').innerText;
+    navigator.clipboard.writeText(pickupCode).then(function() {
+        showToast('取件码已复制');
+        vibrate();
+    }).catch(function() {
+        showToast('复制失败，请手动记录');
+    });
+}
+
+function autoSaveDraft() {
+    var draft = {
+        canvas: fabricCanvas.toJSON(),
+        timestamp: Date.now()
+    };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+}
+
+function checkDraft() {
+    var draft = localStorage.getItem(DRAFT_KEY);
+    if (draft) {
+        var data = JSON.parse(draft);
+        var hours = (Date.now() - data.timestamp) / (1000 * 60 * 60);
+        
+        if (hours < 24 && confirm('检测到未完成的设计，是否恢复？')) {
+            initFabric(true, JSON.stringify(data.canvas));
+            showToast('已恢复上次设计');
+        }
+    }
+}
+
+function scrollToTop() {
+    var mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    vibrate();
+}
+
+function showServiceModal() {
+    document.getElementById('serviceModal').classList.add('active');
+    vibrate();
+}
+
+function closeServiceModal() {
+    document.getElementById('serviceModal').classList.remove('active');
+}
+
+function initPresetPhrases() {
+    var container = document.getElementById('presetPhrases');
+    presetPhrases.forEach(function(phrase) {
+        var div = document.createElement('div');
+        div.className = 'preset-phrase';
+        div.innerText = phrase;
+        div.onclick = function() {
+            vibrate();
+            addUserText(phrase);
+        };
+        container.appendChild(div);
+    });
+}
+
+function initEventListeners() {
+    document.getElementById('undoBtn').addEventListener('click', undo);
+    document.getElementById('zoomInBtn').addEventListener('click', zoomIn);
+    document.getElementById('zoomOutBtn').addEventListener('click', zoomOut);
+    document.getElementById('deleteSelectedBtn').addEventListener('click', deleteSelected);
+    document.getElementById('orderBtn').addEventListener('click', openOrderModal);
+    
+    document.querySelectorAll('.mockup-type-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            switchMockupMode(btn.dataset.type);
+        });
+    });
+    
+    document.getElementById('previewThumb').addEventListener('click', openPreviewModal);
+    document.getElementById('previewClose').addEventListener('click', closePreviewModal);
+    document.getElementById('switchMockupBtn').addEventListener('click', function() {
+        var newMode = currentMockup === 'postcard' ? 'tote' : 'postcard';
+        switchMockupMode(newMode);
+        setTimeout(function() {
+            updatePreviewModal();
+        }, 300);
+    });
+    
+    document.getElementById('orderModalClose').addEventListener('click', closeOrderModal);
+    document.getElementById('submitOrderBtn').addEventListener('click', submitOrder);
+    document.getElementById('copyPickupBtn').addEventListener('click', copyPickupCode);
+    
+    document.getElementById('serviceBtn').addEventListener('click', showServiceModal);
+    document.getElementById('serviceModalClose').addEventListener('click', closeServiceModal);
+    
+    document.getElementById('backTopBtn').addEventListener('click', scrollToTop);
+    
+    document.getElementById('ctxDelete').addEventListener('click', function() {
+        deleteSelected();
+    });
+    
+    document.getElementById('ctxCopy').addEventListener('click', function() {
+        var active = fabricCanvas.getActiveObject();
+        if (active) {
+            active.clone(function(cloned) {
+                cloned.set({
+                    left: active.left + 20,
+                    top: active.top + 20
+                });
+                fabricCanvas.add(cloned);
+                fabricCanvas.setActiveObject(cloned);
+                fabricCanvas.renderAll();
+                saveHistory();
+                showToast('已复制');
+                vibrate();
+            });
+        }
+    });
+    
+    document.getElementById('ctxBringFront').addEventListener('click', function() {
+        var active = fabricCanvas.getActiveObject();
+        if (active) {
+            fabricCanvas.bringToFront(active);
+            fabricCanvas.renderAll();
+            saveHistory();
+            showToast('已置于顶层');
+            vibrate();
+        }
+    });
+    
+    document.getElementById('ctxSendBack').addEventListener('click', function() {
+        var active = fabricCanvas.getActiveObject();
+        if (active) {
+            fabricCanvas.sendToBack(active);
+            fabricCanvas.renderAll();
+            saveHistory();
+            showToast('已置于底层');
+            vibrate();
+        }
+    });
+    
+    document.getElementById('bgColorSelect').addEventListener('change', function(e) {
+        fabricCanvas.setBackgroundColor(e.target.value, function() {
+            fabricCanvas.renderAll();
+            saveHistory();
+            autoSaveDraft();
+        });
+    });
+    
+    window.addEventListener('resize', function() {
+        scheduleUpdateMockup();
+    });
+}
+
+function init() {
+    if (typeof fabric === 'undefined') {
+        console.error('Fabric.js 未加载');
+        alert('Fabric.js 未加载，请刷新页面');
+        return;
+    }
+    buildCategoryTabs();
+    renderPatterns();
+    initPresetPhrases();
+    initFabric(false);
+    checkDraft();
+    
+    setTimeout(function() {
+        updateMockup();
+    }, 500);
+    
+    initEventListeners();
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

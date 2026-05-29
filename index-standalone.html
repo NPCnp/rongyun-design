@@ -1,0 +1,158 @@
+﻿﻿﻿﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>榕韵亲子定制 | 自助设计</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&family=Ma+Shan+Zheng&family=ZCOOL+KuaiLe&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+<div class="app-container">
+    <div class="header">
+        <h1>🌿 榕韵亲子定制</h1>
+        <p>福州文旅 | 自助设计 · 即印即得</p>
+        <div class="shop-info">🕘 09:00-21:00 | 📍 三坊七巷主街</div>
+    </div>
+
+    <div class="main-content">
+        <div class="pattern-scroll-wrapper">
+            <div class="category-tabs" id="categoryTabs"></div>
+            <div class="pattern-scroll" id="patternGrid"></div>
+        </div>
+
+        <div class="canvas-section">
+            <div class="canvas-container">
+                <div class="canvas-wrapper">
+                    <canvas id="designCanvas" width="600" height="400"></canvas>
+                </div>
+            </div>
+
+            <div class="text-tools">
+                <textarea id="userTextInput" placeholder="输入祝福语..."></textarea>
+                <div class="preset-phrases" id="presetPhrases"></div>
+                <div class="font-controls">
+                    <select id="fontFamilySelect">
+                        <option value="'Noto Serif SC', serif">思源宋体</option>
+                        <option value="'Noto Sans SC', sans-serif">思源黑体</option>
+                        <option value="'Ma Shan Zheng', cursive">马善政</option>
+                        <option value="'ZCOOL XiaoWei', serif">小薇手写</option>
+                        <option value="'ZCOOL KuaiLe', cursive">快乐字体</option>
+                        <option value="'KaiTi', serif">楷体</option>
+                    </select>
+                    <select id="fontSizeSelect">
+                        <option value="24">小</option>
+                        <option value="32" selected>中</option>
+                        <option value="48">大</option>
+                    </select>
+                    <input type="color" id="textColorPicker" value="#4a2c14">
+                </div>
+                <button id="addTextBtn" onclick="addUserText()">✍️ 添加文字</button>
+                <select id="bgColorSelect" class="bg-select">
+                    <option value="#ffffff">白色底色</option>
+                    <option value="#fff5e6">米黄宣纸</option>
+                    <option value="#e7f0e6">茉莉淡绿</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-bar">
+        <button class="bottom-btn secondary" id="undoBtn">↩️ 撤销</button>
+        <button class="bottom-btn secondary" id="zoomInBtn">➕ 放大</button>
+        <button class="bottom-btn secondary" id="zoomOutBtn">➖ 缩小</button>
+        <button class="bottom-btn secondary" id="deleteSelectedBtn" disabled>🗑️ 删除</button>
+        <button class="bottom-btn primary" id="orderBtn">✅ 下单</button>
+    </div>
+
+    <div class="preview-thumb" id="previewThumb">
+        <img id="previewThumbImg" alt="预览">
+    </div>
+
+    <div class="mockup-type-toggle">
+        <button class="mockup-type-btn active" data-type="postcard" title="明信片">📬</button>
+        <button class="mockup-type-btn" data-type="tote" title="帆布袋">🛍️</button>
+    </div>
+
+    <button class="float-btn back-top" id="backTopBtn" title="返回顶部">⬆️</button>
+    <button class="float-btn service" id="serviceBtn" title="联系客服">💬</button>
+</div>
+
+<div class="preview-modal" id="previewModal">
+    <div class="preview-close" id="previewClose">✕</div>
+    <div class="preview-content" id="previewContent">
+        <img id="previewImage" src="" alt="预览">
+    </div>
+    <div class="preview-controls">
+        <button class="preview-btn" id="switchMockupBtn">🔄 切换模式</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="orderModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>📋 确认订单</h3>
+            <button class="modal-close" id="orderModalClose">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>订单号</label>
+                <input type="text" id="orderNoInput" readonly class="readonly">
+            </div>
+            <div class="form-group">
+                <label>姓名 <span style="color:red">*</span></label>
+                <input type="text" id="orderNameInput" placeholder="请输入您的姓名">
+            </div>
+            <div class="form-group">
+                <label>手机号 <span style="color:red">*</span></label>
+                <input type="tel" id="orderPhoneInput" placeholder="请输入手机号">
+            </div>
+            <img id="orderPreviewImage" class="order-preview-img" alt="设计预览">
+            <div id="pickupCodeDisplay" style="display:none;">
+                    <div style="background:#B84A3C;color:white;padding:12px;border-radius:12px;text-align:center;margin-top:12px;">
+                        <div style="font-size:0.8rem;margin-bottom:4px;">取件码</div>
+                        <div style="font-size:1.5rem;font-weight:bold;letter-spacing:2px;" id="pickupCodeText"></div>
+                        <button style="margin-top:8px;padding:6px 16px;background:rgba(255,255,255,0.2);border:none;border-radius:20px;color:white;font-size:0.8rem;cursor:pointer;" id="copyPickupBtn">一键复制</button>
+                    </div>
+                </div>
+        </div>
+        <div class="modal-footer">
+            <button class="bottom-btn primary" id="submitOrderBtn" style="width:100%;">✅ 提交订单</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay service-modal" id="serviceModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>💬 联系店家</h3>
+            <button class="modal-close" id="serviceModalClose">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="service-qrcode">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='white'/%3E%3Crect x='10' y='10' width='36' height='36' fill='%23333'/%3E%3Crect x='56' y='10' width='36' height='36' fill='%23333'/%3E%3Crect x='102' y='10' width='36' height='36' fill='%23333'/%3E%3Crect x='154' y='10' width='36' height='36' fill='%23333'/%3E%3Crect x='10' y='56' width='36' height='36' fill='%23333'/%3E%3Crect x='56' y='56' width='36' height='36' fill='white'/%3E%3Crect x='102' y='56' width='36' height='36' fill='%23333'/%3E%3Crect x='154' y='56' width='36' height='36' fill='%23333'/%3E%3Crect x='10' y='102' width='36' height='36' fill='%23333'/%3E%3Crect x='56' y='102' width='36' height='36' fill='%23333'/%3E%3Crect x='102' y='102' width='36' height='36' fill='%23333'/%3E%3Crect x='154' y='102' width='36' height='36' fill='%23333'/%3E%3Crect x='10' y='154' width='36' height='36' fill='%23333'/%3E%3Crect x='56' y='154' width='36' height='36' fill='%23333'/%3E%3Crect x='102' y='154' width='36' height='36' fill='%23333'/%3E%3Crect x='154' y='154' width='36' height='36' fill='white'/%3E%3C/svg%3E" width="180" height="180" alt="二维码">
+            </div>
+            <div>微信扫码咨询</div>
+            <div class="service-phone">📞 138-0000-0000</div>
+        </div>
+    </div>
+</div>
+
+<div class="context-menu" id="contextMenu">
+    <div class="context-menu-item" id="ctxDelete">🗑️ 删除</div>
+    <div class="context-menu-item" id="ctxCopy">📋 复制</div>
+    <div class="context-menu-item" id="ctxBringFront">⬆️ 置于顶层</div>
+    <div class="context-menu-item" id="ctxSendBack">⬇️ 置于底层</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="src/config.js"></script>
+<script src="src/data.js"></script>
+<script src="src/canvas-manager.js"></script>
+<script src="src/order-manager.js"></script>
+<script src="src/app.js"></script>
+</body>
+</html>

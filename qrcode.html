@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>榕韵亲子定制 - 生成二维码</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Noto Sans SC', sans-serif; background: linear-gradient(135deg, #FAF7F2, #E8D5C4); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        .container { background: white; border-radius: 24px; padding: 32px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); text-align: center; max-width: 500px; width: 100%; }
+        .logo { font-family: 'Noto Serif SC', serif; font-size: 1.5rem; color: #B84A3C; margin-bottom: 8px; }
+        .subtitle { color: #6B6B6B; font-size: 0.9rem; margin-bottom: 24px; }
+        .url-box { background: #f8f9fa; border: 2px dashed #E8D5C4; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .url-text { font-size: 0.9rem; color: #4A6FA5; word-break: break-all; margin-bottom: 16px; }
+        .copy-btn { background: #B84A3C; color: white; border: none; padding: 12px 24px; border-radius: 30px; font-size: 0.9rem; cursor: pointer; transition: background 0.3s; }
+        .copy-btn:hover { background: #9a3e32; }
+        .step { margin-top: 20px; text-align: left; color: #6B6B6B; font-size: 0.9rem; line-height: 1.8; }
+        .step h3 { color: #4A6FA5; margin-bottom: 12px; }
+        .step ol { margin-left: 20px; }
+        .step li { margin-bottom: 8px; }
+        .step a { color: #B84A3C; text-decoration: underline; }
+        .footer { margin-top: 24px; color: #ccc; font-size: 0.75rem; }
+        .success { color: #52c41a; font-size: 0.85rem; margin-top: 10px; display: none; }
+        .success.show { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">榕韵亲子定制</div>
+        <div class="subtitle">自助设计系统 - 二维码生成</div>
+        
+        <div class="url-box">
+            <div class="url-text" id="urlText">https://npcnp.github.io/rongyun-design/index-inline.html</div>
+            <button class="copy-btn" onclick="copyUrl()">📋 复制网址</button>
+            <div class="success" id="successMsg">✓ 已复制到剪贴板！</div>
+        </div>
+        
+        <div class="step">
+            <h3>📱 生成二维码步骤：</h3>
+            <ol>
+                <li>点击上方"复制网址"按钮</li>
+                <li>访问 <a href="https://cli.im/url" target="_blank">草料二维码</a></li>
+                <li>在输入框中粘贴网址</li>
+                <li>点击"生成二维码"</li>
+                <li>保存或打印二维码供游客使用</li>
+            </ol>
+        </div>
+    </div>
+    <div class="footer">© 2024 榕韵亲子定制</div>
+
+    <script>
+        function copyUrl() {
+            var urlText = document.getElementById('urlText');
+            var successMsg = document.getElementById('successMsg');
+            
+            navigator.clipboard.writeText(urlText.textContent).then(function() {
+                successMsg.classList.add('show');
+                setTimeout(function() {
+                    successMsg.classList.remove('show');
+                }, 2000);
+            }).catch(function(err) {
+                var textArea = document.createElement('textarea');
+                textArea.value = urlText.textContent;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                successMsg.classList.add('show');
+                setTimeout(function() {
+                    successMsg.classList.remove('show');
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

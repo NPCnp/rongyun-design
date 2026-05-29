@@ -1,0 +1,31 @@
+<<<<<<< HEAD
+node_modules/
+.DS_Store
+*.log
+.trae/
+=======
+# 依赖目录
+node_modules/
+
+# IDE 配置
+.trae/
+.vscode/
+.idea/
+
+# 原始图片文件夹（图片已编码到 image-data.js）
+图画/
+
+# 日志和临时文件
+*.log
+*.tmp
+*.bak
+
+# OS 文件
+.DS_Store
+Thumbs.db
+
+# 构建产物
+dist/
+build/
+deploy/
+>>>>>>> e6d0e15daab3311766c20d579f0e89616ff02067
